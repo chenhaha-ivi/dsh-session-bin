@@ -9,6 +9,7 @@
 
 import { stat } from 'node:fs/promises'
 import { join, resolve } from 'node:path'
+import { BinError } from './trash.js'
 
 const DEFAULT_STOP_TIMEOUT_MS = 3000
 const DEFAULT_STOP_POLL_MS = 50
@@ -60,7 +61,10 @@ export function createRuntime(deps) {
   function requireSessionsRoot() {
     const root = currentSessionsRoot()
     if (root === undefined) {
-      throw new Error('cannot locate the session storage root (neither sessionPersistence.root nor DSH_HOME is available)')
+      throw new BinError(
+        'session-bin/no-sessions-root',
+        'cannot locate the session storage root (neither sessionPersistence.root nor DSH_HOME is available)',
+      )
     }
     return root
   }

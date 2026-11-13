@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { mkdir, readFile } from 'node:fs/promises'
-import { join } from 'node:path'
+import { dirname, join } from 'node:path'
 import { createWorkspaceFolderWatcher } from '../src/host/workspace-watch.js'
 import { dispose, tempHome } from './helpers.mjs'
 
@@ -42,7 +42,7 @@ async function makeWatcher(options = {}) {
     home,
     dshHome,
     cwd: home,
-    sessionsRoot: join(home, 'sessions'),
+    sessionsRoot: options.sessionsRoot ?? join(home, 'sessions'),
     trash: options.trash ?? (async (path) => { trashed.push(path); return { via: 'test', target: path } }),
   })
   return { home, dshHome, workspace, ctx, logger, trashed, watcher }
@@ -136,6 +136,26 @@ test('DSH home 被当作保护区，绝不搬', async () => {
     world.ctx.emit('domain/changed', { domain: 'workspace', table: 'workspaces', operation: 'deleted', key: 'ws-dsh' })
     await world.watcher.idle()
     assert.deepEqual(world.trashed, [])
+  } finally {
+    await dispose(home)
+  }
+})
+
+test('会话存储根被当作保护区：祖先工作区绝不搬', async () => {
+  const home = await tempHome('watch-')
+  try {
+    const volume = join(home, 'volume')
+    const sessionsRoot = join(volume, 'sessions')
+    await mkdir(sessionsRoot, { recursive: true })
+    const world = await makeWatcher({
+      home,
+      sessionsRoot,
+      workspaces: [{ id: 'ws-volume', path: volume, title: 'volume' }],
+    })
+    world.ctx.emit('domain/changed', { domain: 'workspace', table: 'workspaces', operation: 'deleted', key: 'ws-volume' })
+    await world.watcher.idle()
+    assert.deepEqual(world.trashed, [])
+    assert.equal(world.logger.lines.some((line) => line.includes('session storage root')), true)
   } finally {
     await dispose(home)
   }

@@ -151,6 +151,13 @@ test('workspaceGroupOf 只认「恰好含一个工作区行」的祖先', async 
   assert.equal(exported.__drag.workspaceGroupOf(tree), null, '整棵列表含多个工作区行，不接管')
 })
 
+test('未分组桶（workspace: 空 key）不当作可投放工作区', async () => {
+  const { exported } = await loadClient()
+  const tree = makeNode()
+  const ungrouped = tree.append(makeGroup('', ['session-1']))
+  assert.equal(exported.__drag.workspaceGroupOf(ungrouped.children[1]), null)
+})
+
 test('dragstart 记住来源；跨组 dragover 才接管并高亮；drop 调 relocate', async () => {
   const { exported, listeners } = await loadClient()
   const ctx = fakeCtx()

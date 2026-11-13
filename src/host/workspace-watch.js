@@ -88,11 +88,16 @@ export function createWorkspaceFolderWatcher(options) {
   /** 该路径是不是「碰一下就出事」的地方。 */
   function refusalFor(target, deletedId) {
     if (target === sep || target === '') return 'the filesystem root'
-    for (const protectedPath of [resolve(home), dshHome, sessionsRoot, cwd]) {
+    const homePath = resolve(home)
+    for (const protectedPath of [homePath, dshHome, sessionsRoot, cwd]) {
       if (protectedPath === undefined) continue
       if (target === protectedPath) return `a protected path (${protectedPath})`
     }
     if (dshHome !== undefined && isInside(target, dshHome)) return 'an ancestor of the DSH home'
+    // 会话根和用户主目录可能不在 DSH home 下（例如 DSH_HOME 指到别处）；
+    // 只做相等判断会让「会话根的祖先工作区」被整目录搬走，必须同样拒绝祖先。
+    if (sessionsRoot !== undefined && isInside(target, sessionsRoot)) return 'an ancestor of the session storage root'
+    if (isInside(target, homePath)) return 'an ancestor of the home directory'
     if (isInside(target, cwd)) return 'an ancestor of the host process cwd'
     for (const [otherId, other] of known) {
       if (otherId === deletedId) continue

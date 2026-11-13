@@ -49,6 +49,8 @@ window.__ModuleLoader__.load({
       'dialog.running': '这个会话正在运行，回收会先停止它。',
       'dialog.confirmRunning': '停止并回收',
       'toast.stoppedRunning': '会话正在运行，已先停止再搬移。',
+      'toast.partial': '操作完成，但有 {count} 条警告：',
+      'warn.registryPending': '文件已移动，但工作区归属没写上；重启 DSH 后会自动补齐。',
       'move.confirmTitle': '停止并搬移？',
       'move.confirmBody': '这个会话正在运行。继续会先停止它，再搬到目标工作区。',
       'move.confirmTarget': '目标工作区：{target}',
@@ -72,6 +74,7 @@ window.__ModuleLoader__.load({
       'bin.restoring': '正在恢复…',
       'bin.purge': '永久删除',
       'bin.failed': '失败',
+      'bin.unfinishedHint': '这个条目还没删完或删除失败，不能恢复；先重启 DSH 让它收敛，必要时查看宿主日志。',
       'bin.purging': '正在删除…',
       'bin.clear': '清空回收站',
       'bin.showMore': '显示更多（还有 {count} 条）',
@@ -83,11 +86,12 @@ window.__ModuleLoader__.load({
       'bin.confirmNo': '再想想',
       'error.unknown-workspace': '这个工作区已经不在注册表里了。',
       'error.caller-session': '不能删除正在执行这次操作的工作区。',
-      'error.session-running': '这个会话正在运行；先停止它，再回收或搬移。',
       'error.no-sessions-root': '定位不到会话存储根目录，为安全起见拒绝操作。',
       'error.session-busy': '还有会话在写日志，停不下来，已取消（没动任何文件）。正在查看这个工作区时，先切到别的会话再删。',
       'error.project-unreadable': '项目目录读不了，已取消。',
       'error.move-failed': '搬移失败，已回滚（没有丢数据）。',
+      'error.delete-failed': '删除失败，已尽力回滚；请查看宿主日志确认最终状态。',
+      'error.verify-failed': '移动后的日志校验没通过，已回滚；源数据还在。',
       'error.registry-failed': '删除工作区登记失败，已回滚。',
       'error.restore-conflict': '目标位置已有同名会话目录，已取消恢复。',
       'error.restore-failed': '恢复失败，已回滚。',
@@ -97,6 +101,16 @@ window.__ModuleLoader__.load({
       'error.bad-request': '请求体不合法，已中止。',
       'error.failed': '宿主内部出错，已中止。',
       'error.session-too-large': '这个会话的日志太大，一次性搬移会吃掉太多内存，已拒绝（先拆分或用命令行处理）。',
+      'error.unknown-target-workspace': '目标工作区已经不在注册表里了。',
+      'error.target-path-missing': '目标工作区的目录不存在或不是目录，已拒绝移动。',
+      'error.no-session-directory': '这个会话在磁盘上没有目录，无法回收。',
+      'error.unknown-session': '会话存储里找不到这个会话。',
+      'error.session-without-cwd': '这个会话没有 cwd，无法定位它的目录。',
+      'error.read-failed': '读不了会话日志，已中止。',
+      'error.no-persistence': '会话持久化服务不可用，已中止。',
+      'error.no-home': '定位不到 DSH home，回收站没有打开。',
+      'error.unaccounted-data': '条目里有清单没登记的会话数据，已拒绝自动恢复或删除；请人工检查。',
+      'error.project-changed': '确认之后项目目录里又出现了新会话，已取消；请重试。',
     }
 
     const EN = {
@@ -111,6 +125,8 @@ window.__ModuleLoader__.load({
       'dialog.running': 'This session is running; recycling it stops it first.',
       'dialog.confirmRunning': 'Stop and recycle',
       'toast.stoppedRunning': 'The session was running; it was stopped before moving.',
+      'toast.partial': 'Done, with {count} warning(s):',
+      'warn.registryPending': 'The files moved, but workspace membership was not written; restart DSH to finish it.',
       'move.confirmTitle': 'Stop and move?',
       'move.confirmBody': 'This session is running. Continuing stops it first, then moves it to the target workspace.',
       'move.confirmTarget': 'Target workspace: {target}',
@@ -134,6 +150,7 @@ window.__ModuleLoader__.load({
       'bin.restoring': 'Restoring…',
       'bin.purge': 'Delete permanently',
       'bin.failed': 'Failed',
+      'bin.unfinishedHint': 'This entry never finished deleting, or the delete failed, so it cannot be restored. Restart DSH to let recovery settle it, and check the host log if needed.',
       'bin.purging': 'Deleting…',
       'bin.clear': 'Empty the bin',
       'bin.showMore': 'Show more ({count} left)',
@@ -145,11 +162,12 @@ window.__ModuleLoader__.load({
       'bin.confirmNo': 'Keep them',
       'error.unknown-workspace': 'That workspace is no longer in the registry.',
       'error.caller-session': 'The workspace running this operation cannot delete itself.',
-      'error.session-running': 'This session is running; stop it before recycling or moving it.',
       'error.no-sessions-root': 'The session storage root could not be located, so the operation was refused.',
       'error.session-busy': 'Some sessions are still writing and could not be stopped; nothing was moved. If you are viewing this workspace, switch to another session and retry.',
       'error.project-unreadable': 'The project directory cannot be read; nothing was moved.',
       'error.move-failed': 'Moving failed and was rolled back (nothing was lost).',
+      'error.delete-failed': 'Deleting failed after a best-effort rollback; check the host log for the final state.',
+      'error.verify-failed': 'The moved log did not verify, so the move was rolled back; the source data is still intact.',
       'error.registry-failed': 'Removing the workspace registration failed and was rolled back.',
       'error.restore-conflict': 'A directory already exists at the restore target; the restore was cancelled.',
       'error.restore-failed': 'Restore failed and was rolled back.',
@@ -159,17 +177,28 @@ window.__ModuleLoader__.load({
       'error.bad-request': 'The request body was not valid and nothing happened.',
       'error.failed': 'The Host failed and nothing happened.',
       'error.session-too-large': 'This session log is too large to move in one piece without exhausting memory, so the move was refused.',
+      'error.unknown-target-workspace': 'The target workspace is no longer in the registry.',
+      'error.target-path-missing': 'The target workspace directory is missing or is not a directory, so the move was refused.',
+      'error.no-session-directory': 'This session has no directory on disk, so it cannot be recycled.',
+      'error.unknown-session': 'The session storage does not hold this session.',
+      'error.session-without-cwd': 'This session has no cwd, so its directory cannot be located.',
+      'error.read-failed': 'The session log could not be read, so the operation was cancelled.',
+      'error.no-persistence': 'The session persistence service is unavailable, so the operation was cancelled.',
+      'error.no-home': 'The DSH home could not be located, so the recycle bin was not opened.',
+      'error.unaccounted-data': 'This entry holds session data the manifest cannot account for, so automatic restore or delete was refused; inspect it manually.',
+      'error.project-changed': 'The project directory gained sessions after confirmation, so the delete was cancelled; please retry.',
     }
 
     /** Host 返回的错误码 → 本地化文案。 */
     const REFUSAL_KEYS = {
       'session-bin/unknown-workspace': 'error.unknown-workspace',
       'session-bin/caller-session': 'error.caller-session',
-      'session-bin/session-running': 'error.session-running',
       'session-bin/no-sessions-root': 'error.no-sessions-root',
       'session-bin/session-busy': 'error.session-busy',
       'session-bin/project-unreadable': 'error.project-unreadable',
       'session-bin/move-failed': 'error.move-failed',
+      'session-bin/delete-failed': 'error.delete-failed',
+      'session-bin/verify-failed': 'error.verify-failed',
       'session-bin/registry-failed': 'error.registry-failed',
       'session-bin/restore-conflict': 'error.restore-conflict',
       'session-bin/restore-failed': 'error.restore-failed',
@@ -179,6 +208,16 @@ window.__ModuleLoader__.load({
       'session-bin/bad-request': 'error.bad-request',
       'session-bin/failed': 'error.failed',
       'session-bin/session-too-large': 'error.session-too-large',
+      'session-bin/unknown-target-workspace': 'error.unknown-target-workspace',
+      'session-bin/target-path-missing': 'error.target-path-missing',
+      'session-bin/no-session-directory': 'error.no-session-directory',
+      'session-bin/unknown-session': 'error.unknown-session',
+      'session-bin/session-without-cwd': 'error.session-without-cwd',
+      'session-bin/read-failed': 'error.read-failed',
+      'session-bin/no-persistence': 'error.no-persistence',
+      'session-bin/no-home': 'error.no-home',
+      'session-bin/unaccounted-data': 'error.unaccounted-data',
+      'session-bin/project-changed': 'error.project-changed',
     }
 
     const STYLES = `
@@ -374,6 +413,25 @@ window.__ModuleLoader__.load({
       return result?.message ?? t('error.failed')
     }
 
+    /**
+     * Host 成功回执也可能带 warnings / errors / registry.applied=false（部分完成）。
+     * 以前客户端只看 ok，用户会以为全部成功；这里把第一条具体原因带出来。
+     */
+    function partialFailureText(result, t) {
+      const value = result?.ok === true && result.value !== null && typeof result.value === 'object' ? result.value : {}
+      const notes = []
+      if (value.registry !== null && typeof value.registry === 'object' && value.registry.applied === false) {
+        notes.push(t('warn.registryPending'))
+      }
+      for (const field of ['warnings', 'errors']) {
+        if (!Array.isArray(value[field])) continue
+        for (const note of value[field]) if (typeof note === 'string' && note !== '') notes.push(note)
+      }
+      if (notes.length === 0) return null
+      const detail = notes.length === 1 ? notes[0] : `${notes[0]} (+${notes.length - 1})`
+      return `${t('toast.partial', { count: notes.length })} ${detail}`
+    }
+
     /** 一次成功的动作之后：刷新计数与面板。 */
     function bump() {
       revisionStore.set(revisionStore.get() + 1)
@@ -517,7 +575,11 @@ window.__ModuleLoader__.load({
         if (rows.length === 1) {
           const key = rowKeyOf(rows[0])
           if (key === null || !key.startsWith('workspace:')) return null
-          return { node: current, workspaceId: key.slice('workspace:'.length) }
+          const workspaceId = key.slice('workspace:'.length)
+          // DSH 的「未分组」桶 key 是空串（data-row-key="workspace:"），
+          // 它不是可投放的工作区；空 id 会让 Host 返回 invalid-request。
+          if (workspaceId === '') return null
+          return { node: current, workspaceId }
         }
         current = current.parentNode
       }
@@ -531,7 +593,17 @@ window.__ModuleLoader__.load({
       let highlighted = null
       let lineAnchor = null
       let trashHover = null
+      /** dragover 会高频触发；同一个 target 上复用上一次的分组查找。 */
+      let groupCache = { target: null, group: null }
       const t = (key) => ctx.locale.bind(NS)(key)
+
+      /** 最近的工作区分组（按事件目标缓存，dragend 时清空）。 */
+      const groupFor = (target) => {
+        if (groupCache.target === target) return groupCache.group
+        const group = workspaceGroupOf(target)
+        groupCache = { target, group }
+        return group
+      }
 
       const clearHighlight = () => {
         if (highlighted !== null && highlighted.classList !== undefined) highlighted.classList.remove('sbin-drop-target')
@@ -586,6 +658,7 @@ window.__ModuleLoader__.load({
       }
       const reset = () => {
         dragging = null
+        groupCache = { target: null, group: null }
         clearHighlight()
         clearLine()
         clearTrash()
@@ -602,7 +675,7 @@ window.__ModuleLoader__.load({
         if (sessionId === null) return
         dragging = {
           sessionId,
-          sourceWorkspaceId: workspaceGroupOf(event.target)?.workspaceId ?? null,
+          sourceWorkspaceId: groupFor(event.target)?.workspaceId ?? null,
           insertion: null,
         }
         try {
@@ -628,7 +701,7 @@ window.__ModuleLoader__.load({
           return
         }
         clearTrash()
-        const group = workspaceGroupOf(event.target)
+        const group = groupFor(event.target)
         if (group === null || group.workspaceId === dragging.sourceWorkspaceId) {
           dragging.insertion = null
           clearHighlight()
@@ -680,7 +753,7 @@ window.__ModuleLoader__.load({
           requestStore.set({ kind: 'session', sessionId, displayTitle: '' })
           return
         }
-        const group = workspaceGroupOf(event.target)
+        const group = groupFor(event.target)
         if (group === null || group.workspaceId === dragging.sourceWorkspaceId) {
           reset()
           return
@@ -785,8 +858,13 @@ window.__ModuleLoader__.load({
     async function moveSession(ctx, t, sessionId, targetWorkspaceId, insertion, options = {}) {
       const result = await callHost('relocate', { sessionId, targetWorkspaceId })
       if (result.ok === true) {
-        // 确认框已经说明过「先停止」时不再补 toast；拿不到运行状态、没弹确认时才提示。
-        if (result.value?.stoppedRunning === true && options.confirmed !== true) toastStore.set({ text: t('toast.stoppedRunning') })
+        const partial = partialFailureText(result, t)
+        if (partial !== null) {
+          toastStore.set({ text: partial, error: true })
+        } else if (result.value?.stoppedRunning === true && options.confirmed !== true) {
+          // 确认框已经说明过「先停止」时不再补 toast；拿不到运行状态、没弹确认时才提示。
+          toastStore.set({ text: t('toast.stoppedRunning') })
+        }
         applyInsertion(ctx, sessionId, insertion)
         bump()
         refreshSessions()
@@ -888,15 +966,21 @@ window.__ModuleLoader__.load({
 
       // Esc：先收确认框，再收面板。
       React.useEffect(() => {
-        if (open === false && request === null) return undefined
+        if (open === false && request === null && moveRequest === null) return undefined
         const onKeyDown = (event) => {
           if (event.key !== 'Escape') return
           if (request !== null) requestStore.set(null)
+          else if (moveRequest !== null) moveRequestStore.set(null)
           else binStore.set(false)
         }
         window.addEventListener('keydown', onKeyDown)
         return () => window.removeEventListener('keydown', onKeyDown)
-      }, [open, request])
+      }, [open, request, moveRequest])
+
+      // 面板关掉时清掉“清空回收站”的确认条，避免下次打开带出一个过期确认。
+      React.useEffect(() => {
+        if (open === false) setConfirm(null)
+      }, [open])
 
       const notify = (text, error = false) => toastStore.set({ text, error })
 
@@ -911,6 +995,8 @@ window.__ModuleLoader__.load({
             bump()
             if (request.kind === 'session') closeOpenSession(request.sessionId)
             refreshSessions()
+            const partial = partialFailureText(result, t)
+            if (partial !== null) notify(partial, true)
           } else {
             notify(failureText(result, t), true)
           }
@@ -925,6 +1011,8 @@ window.__ModuleLoader__.load({
           if (result.ok === true) {
             bump()
             refreshSessions()
+            const partial = partialFailureText(result, t)
+            if (partial !== null) notify(partial, true)
           } else {
             notify(failureText(result, t), true)
           }
@@ -939,6 +1027,8 @@ window.__ModuleLoader__.load({
           if (result.ok === true) {
             bump()
             refreshSessions()
+            const partial = partialFailureText(result, t)
+            if (partial !== null) notify(partial, true)
           } else {
             notify(failureText(result, t), true)
           }
@@ -969,27 +1059,27 @@ window.__ModuleLoader__.load({
         void moveSession(clientCtx, t, pending.sessionId, pending.targetWorkspaceId, pending.insertion, { confirmed: true })
       }
 
-      const moveDialog = moveRequest === null ? null : h('div', { className: 'sbin-modal', role: 'dialog', 'aria-modal': 'true' }, [
+      const moveDialog = moveRequest === null ? null : h('div', { className: 'sbin-modal', role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': 'sbin-move-title' }, [
         h('div', { key: 'mask', className: 'sbin-mask', onClick: () => moveRequestStore.set(null) }),
         h('div', { key: 'card', className: 'sbin-dialog' }, [
           h('div', { key: 'head', className: 'sbin-head' }, [
-            h('h2', { key: 'title', className: 'sbin-title' }, t('move.confirmTitle')),
+            h('h2', { key: 'title', id: 'sbin-move-title', className: 'sbin-title' }, t('move.confirmTitle')),
             h('button', { key: 'close', type: 'button', className: 'sbin-close', 'aria-label': t('dialog.close'), onClick: () => moveRequestStore.set(null) }, h(CloseIcon, null)),
           ]),
           h('p', { key: 'desc', className: 'sbin-desc' }, t('move.confirmBody')),
           moveRequest.targetTitle === '' ? null : h('p', { key: 'target', className: 'sbin-muted' }, t('move.confirmTarget', { target: moveRequest.targetTitle })),
           h('div', { key: 'footer', className: 'sbin-footer' }, [
-            h('button', { key: 'cancel', type: 'button', className: 'sbin-btn', onClick: () => moveRequestStore.set(null) }, t('dialog.cancel')),
+            h('button', { key: 'cancel', type: 'button', className: 'sbin-btn', autoFocus: true, onClick: () => moveRequestStore.set(null) }, t('dialog.cancel')),
             h('button', { key: 'confirm', type: 'button', className: 'sbin-btn sbin-btn-danger', onClick: confirmMove }, t('move.confirmAction')),
           ]),
         ]),
       ])
 
-      const dialog = request === null ? null : h('div', { className: 'sbin-modal', role: 'dialog', 'aria-modal': 'true' }, [
+      const dialog = request === null ? null : h('div', { className: 'sbin-modal', role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': 'sbin-delete-title' }, [
         h('div', { key: 'mask', className: 'sbin-mask', onClick: () => (busy ? undefined : requestStore.set(null)) }),
         h('div', { key: 'card', className: 'sbin-dialog' }, [
           h('div', { key: 'head', className: 'sbin-head' }, [
-            h('h2', { key: 'title', className: 'sbin-title' }, t('dialog.title')),
+            h('h2', { key: 'title', id: 'sbin-delete-title', className: 'sbin-title' }, t('dialog.title')),
             h('button', { key: 'close', type: 'button', className: 'sbin-close', 'aria-label': t('dialog.close'), onClick: () => requestStore.set(null) }, h(CloseIcon, null)),
           ]),
           h('p', { key: 'desc', className: 'sbin-desc' }, t(described.description, { title: described.title })),
@@ -1005,7 +1095,7 @@ window.__ModuleLoader__.load({
           ]),
           planError === null ? null : h('p', { key: 'error', className: 'sbin-error', role: 'alert' }, failureText(planError, t)),
           h('div', { key: 'footer', className: 'sbin-footer' }, [
-            h('button', { key: 'cancel', type: 'button', className: 'sbin-btn', disabled: busy, onClick: () => requestStore.set(null) }, t('dialog.cancel')),
+            h('button', { key: 'cancel', type: 'button', className: 'sbin-btn', autoFocus: true, disabled: busy, onClick: () => requestStore.set(null) }, t('dialog.cancel')),
             h('button', { key: 'confirm', type: 'button', className: 'sbin-btn sbin-btn-danger', disabled: busy || plan === null, onClick: confirmDelete },
               busy ? t('dialog.deleting') : plan?.running === true ? t('dialog.confirmRunning') : t('dialog.confirm')),
           ]),
@@ -1022,7 +1112,8 @@ window.__ModuleLoader__.load({
               key: 'restore',
               type: 'button',
               className: 'sbin-linkbtn',
-              disabled: rowBusy !== null,
+              disabled: rowBusy !== null || entry.state !== 'done',
+              title: entry.state === 'done' ? undefined : t('bin.unfinishedHint'),
               onClick: () => restoreEntry(entry),
             }, rowBusy?.action === 'restore' && rowBusy.id === entry.id ? t('bin.restoring') : t('bin.restore')),
             h('button', {
@@ -1063,12 +1154,12 @@ window.__ModuleLoader__.load({
         ]),
       ])
 
-      const panel = open === false ? null : h('div', { className: 'sbin-modal', role: 'dialog', 'aria-modal': 'true' }, [
+      const panel = open === false ? null : h('div', { className: 'sbin-modal', role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': 'sbin-bin-title' }, [
         h('div', { key: 'mask', className: 'sbin-mask', onClick: () => binStore.set(false) }),
         h('div', { key: 'card', className: 'sbin-dialog' }, [
           h('div', { key: 'head', className: 'sbin-head' }, [
             h('div', { key: 'main', className: 'sbin-head-main' }, [
-              h('h2', { key: 'title', className: 'sbin-title' }, t('bin.title')),
+              h('h2', { key: 'title', id: 'sbin-bin-title', className: 'sbin-title' }, t('bin.title')),
               h('p', { key: 'hint', className: 'sbin-hint' }, t('bin.timing')),
             ]),
             h('button', { key: 'close', type: 'button', className: 'sbin-close', 'aria-label': t('bin.close'), onClick: () => binStore.set(false) }, h(CloseIcon, null)),
@@ -1155,7 +1246,7 @@ window.__ModuleLoader__.load({
       formatBytes,
       __stores: { binStore, requestStore, moveRequestStore, toastStore, revisionStore },
       __drag: { sessionIdOfNode, workspaceGroupOf },
-      __sync: { refreshSessions, closeOpenSession },
+      __sync: { refreshSessions, closeOpenSession, partialFailureText },
     }
   },
 })

@@ -36,6 +36,16 @@ test('surveySession 报告会话、归属与目录', async () => {
   }
 })
 
+test('会话 plan 优先用持久化 stat 的大小，避免递归扫盘', async () => {
+  const world = await makeWorld({ sessionIds: ['session-1'], sizeBytes: 12345 })
+  try {
+    const plan = await world.ops.survey({ sessionId: 'session-1' })
+    assert.equal(plan.size, 12345)
+  } finally {
+    await dispose(world.home)
+  }
+})
+
 test('正在跑的会话允许回收：plan.running=true，先停后删', async () => {
   const world = await makeWorld({ sessionIds: ['session-1'], live: ['session-1'], running: ['session-1'] })
   try {
@@ -93,6 +103,24 @@ test('恢复单会话：目录回位、归属与归档还原、条目消失', as
     assert.equal(await exists(join(world.projectDir, 'session-1')), true)
     assert.deepEqual(world.registry.get('ws-1').sessionIds, ['session-1'])
     assert.deepEqual(world.registry.archivedSessionIds, ['session-1'])
+    assert.equal((await world.bin.scan()).entries.length, 0)
+  } finally {
+    await dispose(world.home)
+  }
+})
+
+test('恢复重试：目录已回位但没 attach 时，仍补回工作区归属', async () => {
+  const world = await makeWorld({ sessionIds: ['session-1'] })
+  try {
+    const report = await world.ops.execute(await world.ops.survey({ sessionId: 'session-1' }))
+    // 模拟「rename 回目标目录之后、attach 之前」崩溃：条目还在，文件已经回位。
+    const binned = join(world.bin.sessionsDir(report.entryId), world.projectKey, 'session-1')
+    await rename(binned, join(world.projectDir, 'session-1'))
+
+    const restored = await world.ops.restore(report.entryId)
+    assert.deepEqual(restored.restored, ['session-1'])
+    assert.deepEqual(restored.attached, ['session-1'])
+    assert.deepEqual(world.registry.get('ws-1').sessionIds, ['session-1'])
     assert.equal((await world.bin.scan()).entries.length, 0)
   } finally {
     await dispose(world.home)

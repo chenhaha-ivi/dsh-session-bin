@@ -82,6 +82,23 @@ test('项目目录里有别人的会话时降级逐会话，绝不整目录搬',
   }
 })
 
+test('survey 之后项目目录多出新会话：execute 拒绝整目录搬，一个字节不动', async () => {
+  const world = await makeWorld({ sessionIds: ['session-1'] })
+  try {
+    const plan = await world.ops.survey({ workspaceId: 'ws-1' })
+    assert.equal(plan.mode, 'project')
+    await mkdir(join(world.projectDir, 'session-new'), { recursive: true })
+
+    await assert.rejects(world.ops.execute(plan), binError('session-bin/project-changed'))
+    assert.notEqual(world.registry.get('ws-1'), undefined)
+    assert.equal(await exists(join(world.projectDir, 'session-1')), true)
+    assert.equal(await exists(join(world.projectDir, 'session-new')), true)
+    assert.equal((await world.bin.scan()).entries.length, 0)
+  } finally {
+    await dispose(world.home)
+  }
+})
+
 test('projectKey 碰撞时降级逐会话，另一个工作区的会话原地不动', async () => {
   const home = await tempHome('bin-')
   try {
@@ -187,6 +204,31 @@ test('注册表删除失败时回滚文件并保留工作区', async () => {
     assert.notEqual(world.registry.get('ws-1'), undefined)
     assert.equal(await exists(join(world.projectDir, 'session-1')), true)
     assert.equal((await world.bin.scan()).entries.length, 0, '回滚干净时不该留下空条目')
+  } finally {
+    await dispose(world.home)
+  }
+})
+
+test('条目里多出未登记的会话目录时，拒绝恢复/永久删除，数据原样保留', async () => {
+  const world = await makeWorld({ sessionIds: ['session-1'] })
+  try {
+    const report = await world.ops.execute(await world.ops.survey({ workspaceId: 'ws-1' }))
+    const binned = join(world.bin.sessionsDir(report.entryId), world.projectKey)
+    await mkdir(join(binned, 'stray-session'), { recursive: true })
+
+    await assert.rejects(world.ops.restore(report.entryId), binError('session-bin/unaccounted-data'))
+    assert.equal((await world.bin.scan()).entries.length, 1)
+    assert.equal(await exists(join(world.projectDir, 'session-1')), false)
+
+    const purged = await world.ops.purge([report.entryId])
+    assert.deepEqual(purged.purged, [])
+    assert.equal(purged.errors.some((error) => error.includes('stray-session')), true)
+    assert.equal(await exists(join(binned, 'stray-session')), true)
+
+    await rm(join(binned, 'stray-session'), { recursive: true, force: true })
+    const restored = await world.ops.restore(report.entryId)
+    assert.deepEqual(restored.restored, ['session-1'])
+    assert.equal((await world.bin.scan()).entries.length, 0)
   } finally {
     await dispose(world.home)
   }

@@ -15,6 +15,12 @@ import { makeWorld } from '../test/support/world.mjs'
 
 const WORKER = new URL('./crash-worker.mjs', import.meta.url).pathname
 
+// SIGKILL 在 Windows 上没有等价语义；Windows 的常规回归由 CI 跑单测 + 三个 e2e。
+if (process.platform === 'win32') {
+  console.log('crash injection: skipped on Windows (SIGKILL is not supported)')
+  process.exit(0)
+}
+
 /** 路径是否存在。 */
 async function exists(path) {
   try {
@@ -132,6 +138,17 @@ const scenarios = [
       assert.equal(after.entries[0].manifest.kind, 'session')
       assert.equal(after.entries[0].manifest.state, 'done')
       assert.equal(await exists(join(world.projectDir, 'session-1')), false)
+    },
+  },
+  {
+    scenario: 'move-session',
+    phase: 'before-park',
+    async expect({ world, after }) {
+      assert.deepEqual(after.entries, [])
+      assert.equal(await exists(join(world.projectDir, 'session-1')), true, '还没 park：源文件必须原地不动')
+      assert.deepEqual(await copiesOf(world), ['source'])
+      const staging = await readdir(join(world.sessionsRoot, '_session-bin-staging')).catch(() => [])
+      assert.deepEqual(staging, [], '只剩 journal 的空 op 应被丢弃')
     },
   },
   {

@@ -12,9 +12,9 @@
 | 项 | 状态 |
 |---|---|
 | 包名 `dsh-session-bin` | ✅ npmjs 未被占用（`npm view` 返回 404）。市场里另有 `@takboo/dsh-session-bin`，同名不同作用域，互不影响 |
-| `node --test` | ✅ 124 passed / 0 failed |
+| `node --test` | ✅ 136 passed / 0 failed |
 | 三个 e2e + 崩溃注入 | ✅ `m1-e2e`、`m3-session-e2e`、`m3-move-e2e`、`crash-injection` 全 OK |
-| 打包产物 | ✅ 28 个文件，约 74 kB（精确大小与校验值见仓库根目录 `CHECKSUMS`，不随包发布） |
+| 打包产物 | ✅ 28 个文件，约 78 kB（精确大小与校验值见仓库根目录 `CHECKSUMS`，不随包发布） |
 | `npm publish --dry-run` | ✅ 通过，目标 npmjs，无告警 |
 | 元数据 | ✅ `author: webchenming`；按你的决定，`repository` / `homepage` / `bugs` 暂不写（没有远端仓库） |
 | npm 登录 | ✅ `npm whoami` = `webchenming` |
@@ -45,6 +45,8 @@
 - `scripts/check-profile.mjs`：兼容 npm 安装（`installedCopy`），不再只认软链。
 - `test/manifest.test.mjs`：断言去 `private`、`engines.dsh` 在顶层、locale 导出与详情页资源存在。
 - 提交（改名收尾 + 发布准备）与 annotated tag `v0.1.0` 见第 9 节。
+- 评审后修复：恢复重试补归属、系统回收站保护区祖先、目标目录校验、未登记数据保护、项目目录复核、
+  `Config` schema、定向索引更新、客户端部分完成提示、错误码本地化；新增 `windows-latest` CI。
 
 ## 4. 产物
 
@@ -67,14 +69,14 @@ npm pack --pack-destination dist --cache ./.npm-cache
 
 ```sh
 node --input-type=module -e "const m=await import('./host.js'); console.log(Object.keys(m).sort())"
-# → [ 'apply', 'inject', 'name' ]；name = dsh-session-bin
+# → [ 'Config', 'apply', 'inject', 'name' ]；name = dsh-session-bin
 
 node -e "const p=require('./package.json'); console.log(p.private, p.engines.dsh, p.author)"
 # → undefined  >=0.2.2-rc.1 <0.3.0  webchenming
 ```
 
 `locale/zh.json`、`locale/en.json`、`docs/DETAIL*.md`、`docs/preview.svg`、`icon.svg` 都在包内且能解析。
-`npm publish --dry-run` 会先跑 `prepublishOnly`（即 `npm test`），124 个用例全绿后才会继续。
+`npm publish --dry-run` 会先跑 `prepublishOnly`（即 `npm test`），136 个用例全绿后才会继续。
 
 ## 6. 发布
 
@@ -111,7 +113,7 @@ npm publish --registry=https://registry.npmjs.org --cache ./.npm-cache
 
 ## 9. 源码提交与标签
 
-发布准备与改名收尾已分成两个提交，并打了 annotated tag：
+发布准备、改名收尾与评审后修复已分成三个提交，`v0.1.0` tagged 到修复后的提交：
 
 ```sh
 git tag -n                    # v0.1.0  dsh-session-bin 0.1.0
@@ -132,3 +134,5 @@ git push -u origin main --tags
 - DSH Plugins 页里的实际排版（标题/描述/详情图/明暗主题）未在真机目检；只验证了资源文件、
   预览图的独立渲染与元数据解析。
 - GitHub 仓库尚未创建，`repository` / `homepage` / `bugs` 为空。
+- Windows CI 工作流（`.github/workflows/windows.yml`）已加入，但尚未在 GitHub 上实际跑过；
+  Windows 仍按「未真机验证」看待。

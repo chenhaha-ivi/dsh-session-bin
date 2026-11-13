@@ -15,6 +15,17 @@
 - `private` 已移除；`engines.dsh` 从 `dsh.engines` 移到顶层 `engines.dsh`——DSH 安装与启动校验读的是顶层字段，
   原来嵌套的那份不会被检查。
 
+### 变更
+
+- 运行中的会话改为「先确认、再停止」：菜单/拖拽不再禁用，Host 也不再返回 `session-bin/session-running`；
+  停不下来时仍整体拒绝（`session-bin/session-busy`）。
+- 跨区移动只支持拖拽，且只搬当前选中的会话；子代理会话不随迁，仍留在原工作区。
+- 恢复/永久删除会拒绝条目里“manifest 未登记”的会话数据（`session-bin/unaccounted-data`）；
+  整目录删除在确认后若出现新会话，会拒绝并提示重试（`session-bin/project-changed`）。
+- 插件配置现在有 `Config` 校验：`home` / `trashWorkspaceFolder` 的类型错误或未知键会在激活时报错，
+  `trashWorkspaceFolder` 缺省 `false`。
+- 跨区移动改为只更新这一条会话的 header 索引，不再每次全量重扫；大会话库拖动更快。
+
 ### 破坏性变更
 
 - 包名 `dsh-workspace-bin` → `dsh-session-bin`，插件 id `workspace-bin` → `session-bin`；
@@ -34,6 +45,12 @@
 - 回收站面板只显示「宿主内部出错，已中止。」：会话条目在删除时没有归属（manifest 里
   `workspace: null`，例如原工作区已经不在注册表里）会让 `list` 抛异常。现在这类条目
   正常列出，面板照常显示会话标题、大小与操作。
+- 恢复重试：目录已回位、但上次恢复还没 attach 就崩溃时，重试现在会补回工作区归属，不再落到「未分组」。
+- 目标工作区目录被删/换成文件时，跨区移动在搬任何字节前就拒绝（`session-bin/target-path-missing`）。
+- 项目模式删除不再预先创建目标目录，避免 Windows 上 rename 到已存在目录失败。
+- 系统回收站保护区补齐 `sessionsRoot` 与用户主目录的祖先判断，避免开启 `trashWorkspaceFolder` 后误搬。
+- 客户端会显示 restore/purge/relocate 的部分完成警告；失败/未完成条目不能再点「恢复」。
+- 补齐错误码本地化；`no-sessions-root` 现在返回稳定错误码而不是普通异常。
 
 ## 旧包：dsh-workspace-bin（0.1.x ~ 0.4.x）
 

@@ -156,6 +156,19 @@ test('拖拽高亮 / toast / 确认条的关键样式还在（防重设计误删
   }
 })
 
+test('部分完成回执会生成可读提示', async () => {
+  const { exported } = await loadClient()
+  const t = (key, params) => (params?.count === undefined ? key : `${key}:${params.count}`)
+  assert.equal(exported.__sync.partialFailureText({ ok: true, value: {} }, t), null)
+  const warning = exported.__sync.partialFailureText({ ok: true, value: { warnings: ['attach failed'] } }, t)
+  assert.equal(warning.includes('toast.partial:1'), true)
+  assert.equal(warning.includes('attach failed'), true)
+  const registry = exported.__sync.partialFailureText({ ok: true, value: { registry: { applied: false } } }, t)
+  assert.equal(registry.includes('warn.registryPending'), true)
+  const errors = exported.__sync.partialFailureText({ ok: true, value: { errors: ['e1', 'e2'] } }, t)
+  assert.equal(errors.includes('toast.partial:2'), true)
+})
+
 test('formatBytes 边界', async () => {
   const { exported } = await loadClient()
   assert.equal(exported.formatBytes(0), '0 B')

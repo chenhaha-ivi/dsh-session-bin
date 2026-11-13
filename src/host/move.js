@@ -52,7 +52,7 @@ const MAX_INLINE_BYTES = 256 * 1024 * 1024
  */
 export function createMoveOps(deps) {
   const { ctx, registry, runtime } = deps
-  const { reason, isRunning, quiesce, requireSessionsRoot, log } = runtime
+  const { reason, isRunning, quiesce, requireSessionsRoot, pathKind, log } = runtime
   const now = deps.now ?? runtime.now ?? (() => Date.now())
   /** 测试注入的崩溃点（生产不传）。 */
   const hooks = deps.hooks
@@ -60,6 +60,25 @@ export function createMoveOps(deps) {
   /** 会话持久化服务。 */
   function persistence() {
     return ctx?.get?.('sessionPersistence') ?? ctx?.sessionPersistence
+  }
+
+  /**
+   * 挂在某个会话下的子代理 id。移动只搬被拖的会话，不搬子代理；这里只用于提示，
+   * 让用户知道它们留在原工作区，避免以为整棵会话树都跟过去了。
+   * @param {string} sessionId
+   * @returns {Promise<string[]>}
+   */
+  async function subagentChildrenOf(sessionId) {
+    try {
+      const snapshots = await persistence()?.list?.()
+      if (!Array.isArray(snapshots)) return []
+      return snapshots
+        .map((snapshot) => snapshot?.header)
+        .filter((header) => header?.parentSession === sessionId && header?.origin === 'subagent')
+        .map((header) => header.id)
+    } catch {
+      return []
+    }
   }
 
   /** 目标 cwd 下的会话目录。 */
@@ -100,6 +119,19 @@ export function createMoveOps(deps) {
     }
   }
 
+  /** 目标工作区目录必须仍然可用；目录被删/被换成文件时拒绝，别把会话搬进虚空。 */
+  async function requireTargetDirectory(path, details) {
+    const kind = await pathKind(path)
+    if (kind !== 'dir') {
+      throw new BinError(
+        'session-bin/target-path-missing',
+        `the target workspace directory is not usable (${kind}): ${path}`,
+        { ...details, targetPath: path, kind },
+      )
+    }
+    return path
+  }
+
   /** 解析目标工作区：显式 id 优先，其次路径（目录必须存在），否则用注册表按路径找/建。 */
   async function resolveTarget(request) {
     if (typeof request.targetWorkspaceId === 'string' && request.targetWorkspaceId.trim() !== '') {
@@ -107,6 +139,7 @@ export function createMoveOps(deps) {
       if (workspace === undefined) {
         throw new BinError('session-bin/unknown-target-workspace', `the registry holds no workspace ${JSON.stringify(request.targetWorkspaceId)}`, { targetWorkspaceId: request.targetWorkspaceId })
       }
+      await requireTargetDirectory(workspace.path, { targetWorkspaceId: workspace.id })
       return workspace
     }
     if (typeof request.targetPath === 'string' && request.targetPath.trim() !== '') {
@@ -117,6 +150,7 @@ export function createMoveOps(deps) {
       } catch {
         throw new BinError('session-bin/target-path-missing', `target path does not exist as a directory: ${absolute}`, { targetPath: absolute })
       }
+      await requireTargetDirectory(canonical, {})
       const existing = await registry.resolveByPath?.(canonical)
       if (existing !== undefined) return existing
       return await registry.create(canonical)
@@ -124,8 +158,18 @@ export function createMoveOps(deps) {
     throw new BinError('session-bin/invalid-request', 'targetWorkspaceId or targetPath is required')
   }
 
-  /** 把 header 索引指到事实：优先用注册表自己的重建入口，失败再逐字段改。 */
+  /**
+   * 把 header 索引指到事实：优先只改这一条会话，避免每次拖拽都全量重扫。
+   * 只有私有索引不存在（未来 DSH 移除这些字段）时才退回全量重建。
+   */
   async function retargetIndex(sessionId, header, target) {
+    if (registry.headers instanceof Map || registry.sessionPaths instanceof Map) {
+      if (registry.headers instanceof Map) registry.headers.set(sessionId, header)
+      if (registry.sessionPaths instanceof Map) registry.sessionPaths.set(sessionId, target.path)
+      if (registry.missingSessionPaths instanceof Set) registry.missingSessionPaths.delete(sessionId)
+      if (registry.invalidSessionPaths instanceof Map) registry.invalidSessionPaths.delete(sessionId)
+      return false
+    }
     let refreshed = false
     try {
       if (typeof registry.listStoredHeaders === 'function' && typeof registry.replaceHeaderIndex === 'function') {
@@ -391,6 +435,10 @@ export function createMoveOps(deps) {
 
     await hooks?.reach?.('after-verify', { sessionId, opId })
     const warnings = [...quiesced.errors]
+    const children = await subagentChildrenOf(sessionId)
+    if (children.length > 0) {
+      warnings.push(`${children.length} subagent session(s) stay in the original workspace: ${children.join(', ')}`)
+    }
     const refreshed = await retargetIndex(sessionId, verified.header ?? { ...sourceHeader, cwd: toCwd }, target)
     let registryApplied = false
     let registryReason
@@ -500,6 +548,18 @@ export function createMoveOps(deps) {
           continue
         }
         // 目标不可用：回滚到源目录。
+        const stagedKind = await pathKind(stagedDir)
+        if (stagedKind !== 'dir') {
+          // 崩在「journal 写完、源目录还没 park」之间：源文件仍在原位，
+          // 清掉空的暂存 op 即可，不能拿不存在的 stagedDir 去 rename。
+          const sourceKind = await pathKind(sessionDirAt(journal.fromCwd, sessionId))
+          if (sourceKind !== 'dir') {
+            throw new Error('neither the staged source nor the original session directory exists')
+          }
+          await dropOp(opId)
+          recovered.push({ opId, sessionId, action: 'discarded-noop' })
+          continue
+        }
         await rm(sessionDirAt(journal.toCwd, sessionId), { recursive: true, force: true, maxRetries: 2 }).catch(() => {})
         await mkdir(dirname(sessionDirAt(journal.fromCwd, sessionId)), { recursive: true })
         await restoreParked(stagedDir, sessionDirAt(journal.fromCwd, sessionId))

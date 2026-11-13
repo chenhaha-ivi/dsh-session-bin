@@ -94,6 +94,7 @@ M1 内部按「纯函数 → 存储 → 事务 → 路由 → 恢复」推进，
 
 | 日期 | 做了什么 | 证据 |
 |---|---|---|
+| 2026-11-13 | 评审后修复：恢复重试补归属、系统回收站保护区祖先、目标目录校验、未登记数据保护、项目目录复核、客户端部分完成提示、错误码本地化 | `node --test` 136 全绿；三个 e2e + `crash-injection` 8/8 全 OK；新增 Config schema、定向索引更新与 Windows CI |
 | 2026-11-13 | 发布前置准备（npm 0.1.0）：元数据、插件页展示资源、产物与发布清单 | `node --test` 124 全绿；三个 e2e + `crash-injection` 全 OK；`npm pack` 28 文件约 74 kB（校验值见 `CHECKSUMS`）；`npm publish --dry-run` 通过；见 [RELEASE.md](RELEASE.md) |
 | 2026-11-13 | 修复：跨区移动后目标工作区显示「未命名」 | 根因是 relocate 删掉了 `session_projcache` 记录，冷列表没有 title 投影。改为保留 rows、只更新 `identity.cwd`（查不到记录/写失败才删）。隔离实例：带标题会话 A→B 后刷新页面直接显示标题；`node --test` 103 全绿 |
 | 2026-11-12 | 新增：官方删除工作区时把本地目录送进系统回收站 | Host 监听 `domain/changed`（`put` 缓存 path、`deleted` 搬目录）；Electron `shell.trashItem` 优先，macOS 退回 `~/.Trash`，跨卷/保护区拒绝并记日志；插件自身事务 `suppress`。`node --test` 101 全绿；隔离实例 + 真浏览器验证官方删除后目录消失、插件删除时目录保留 |

@@ -6,7 +6,7 @@
  * 这样即使 profile 的 node_modules 布局变了，插件也能加载。
  *
  * 激活时只做两件事：
- *   1. 挂一个精确路由 `/api/session-bin`（五个端点，见 routes.js）；
+ *   1. 挂一个精确路由 `/api/session-bin`（六个端点，见 routes.js）；
  *   2. 跑一次启动恢复（回收站里 `planned` 的条目收敛，**绝不自动删字节**）。
  *
  * @module dsh-session-bin
@@ -35,6 +35,53 @@ export const ROUTE = '/api/session-bin'
  * 缺任一个都说明这个 profile 没有「工作区」这套概念，插件不该加载。
  */
 export const inject = ['connection', 'sessionPersistence', 'workspaceRegistry']
+
+/** profile 里这一行允许的配置键。 */
+const CONFIG_KEYS = new Set(['home', 'trashWorkspaceFolder'])
+
+/**
+ * 插件配置的 Standard Schema。
+ *
+ * DSH 的 cordis 在激活前调用 `Config['~standard'].validate(raw)`；这里不引入任何
+ * schema 依赖，避免破坏「Host 不 import 核心包」的约束。返回值是规范化后的配置：
+ * `trashWorkspaceFolder` 缺省 false，`home` 去掉首尾空白。
+ */
+export const Config = {
+  '~standard': {
+    version: 1,
+    vendor: 'dsh-session-bin',
+    /**
+     * @param {unknown} value profile 里这一行的原始 config。
+     * @returns {{value: Record<string, unknown>} | {issues: Array<{message: string}>}}
+     */
+    validate(value) {
+      const settings = { trashWorkspaceFolder: false }
+      if (value === undefined || value === null) return { value: settings }
+      if (typeof value !== 'object' || Array.isArray(value)) {
+        return { issues: [{ message: 'config must be an object' }] }
+      }
+      const issues = []
+      for (const key of Object.keys(value)) {
+        if (!CONFIG_KEYS.has(key)) issues.push({ message: `unknown config key: ${key}` })
+      }
+      if (value.home !== undefined) {
+        if (typeof value.home !== 'string' || value.home.trim() === '') {
+          issues.push({ message: 'home must be a non-empty string' })
+        } else {
+          settings.home = value.home.trim()
+        }
+      }
+      if (value.trashWorkspaceFolder !== undefined) {
+        if (typeof value.trashWorkspaceFolder !== 'boolean') {
+          issues.push({ message: 'trashWorkspaceFolder must be a boolean' })
+        } else {
+          settings.trashWorkspaceFolder = value.trashWorkspaceFolder
+        }
+      }
+      return issues.length > 0 ? { issues } : { value: settings }
+    },
+  },
+}
 
 /**
  * 解析 DSH home：配置 > `$DSH_HOME` > `~/.dsh`（与 dsh-home-paths 的优先级一致）。

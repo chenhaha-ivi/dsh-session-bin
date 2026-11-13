@@ -258,12 +258,14 @@ export function createWorkspaceOps(deps) {
    */
   async function moveIntoBin(plan, entryId) {
     const destinationProjectDir = join(bin.sessionsDir(entryId), plan.projectKey)
-    await mkdir(destinationProjectDir, { recursive: true })
     if (plan.mode === 'none') return { moved: [], skipped: plan.sessions.map((session) => session.id) }
     if (plan.mode === 'project') {
+      // 不要预先 mkdir 目标目录：POSIX 允许 rename 目录到空目录，Windows 上
+      // 「rename 到已存在目录」会失败。父目录 sessions/ 由 allocate 建好。
       await rename(plan.projectDir, destinationProjectDir)
       return { moved: [{ from: plan.projectDir, to: destinationProjectDir }], skipped: [] }
     }
+    await mkdir(destinationProjectDir, { recursive: true })
     const moved = []
     const skipped = []
     for (const session of plan.sessions) {
@@ -401,6 +403,18 @@ export function createWorkspaceOps(deps) {
         { workspaceId: plan.workspace.id },
       )
     }
+    // survey 到 execute 之间可能有新会话落进项目目录：整目录 rename 会把它一起
+    // 卷进回收站，却不在 manifest 里。搬运前再核对一次，宁可让用户重试。
+    if (plan.mode === 'project') {
+      const exclusivity = await projectDirectoryExclusivity(plan.projectDir, plan.sessions.map((session) => session.id))
+      if (exclusivity.extra.length > 0) {
+        throw new BinError(
+          'session-bin/project-changed',
+          `the project directory gained sessions after the plan was made: ${exclusivity.extra.join(', ')}`,
+          { workspaceId: plan.workspace.id, extra: exclusivity.extra },
+        )
+      }
+    }
     const warnings = []
 
     // 1. 停活：文件搬走前，所有写句柄必须松开。
@@ -526,6 +540,17 @@ export function createWorkspaceOps(deps) {
    */
   async function restore(entryId) {
     const manifest = await bin.readManifest(entryId)
+    // manifest 才是清单：条目里若多出未登记的会话目录（例如整目录搬移期间
+    // 新建了会话），恢复/删除都不能把它静默丢掉。
+    const entry = { id: entryId, manifest }
+    const unaccounted = await unaccountedSessionDirs(entry)
+    if (unaccounted.length > 0) {
+      throw new BinError(
+        'session-bin/unaccounted-data',
+        `entry ${entryId} holds session data the manifest cannot account for: ${unaccounted.join(', ')}`,
+        { entryId, unaccounted },
+      )
+    }
     if (manifest.kind === 'session') {
       if (typeof deps.restoreSession !== 'function') {
         throw new BinError('session-bin/wrong-kind', `entry ${entryId} is a session entry, and no session restorer is wired`, { entryId })
@@ -640,6 +665,11 @@ export function createWorkspaceOps(deps) {
         errors.push(`${entry.id}: still planned (run startup recovery before purging)`)
         continue
       }
+      const unaccounted = await unaccountedSessionDirs(entry)
+      if (unaccounted.length > 0) {
+        errors.push(`${entry.id}: refuses to purge data the manifest cannot account for (${unaccounted.join(', ')})`)
+        continue
+      }
       const present = await presentSessions(entry)
       try {
         await bin.removeEntry(entry.id)
@@ -696,6 +726,16 @@ export function createWorkspaceOps(deps) {
     } catch {
       return []
     }
+  }
+
+  /**
+   * 条目里 manifest 没有登记的会话目录；这些字节只能由人工判断，不能自动搬/删。
+   * @param {{id: string, manifest: object}} entry
+   * @returns {Promise<string[]>}
+   */
+  async function unaccountedSessionDirs(entry) {
+    const known = new Set(entry.manifest.sessions.map((session) => encodeSegment(session.id)))
+    return (await binProjectDirs(entry)).filter((name) => !known.has(name))
   }
 
   /**

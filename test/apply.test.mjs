@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { join } from 'node:path'
-import { apply, inject, name, ROUTE, resolveHome } from '../src/host/index.js'
+import { apply, Config, inject, name, ROUTE, resolveHome } from '../src/host/index.js'
 import { createFakeRegistry, makeWorld } from './support/world.mjs'
 
 /** 与 Connection.fetch.register 的约定同形的假 ctx。 */
@@ -123,4 +123,17 @@ test('插件导出面稳定', () => {
   assert.equal(name, 'dsh-session-bin')
   assert.deepEqual(inject, ['connection', 'sessionPersistence', 'workspaceRegistry'])
   assert.equal(typeof apply, 'function')
+})
+
+test('Config 校验并规范化 home / trashWorkspaceFolder', () => {
+  const validate = Config['~standard'].validate
+  assert.deepEqual(validate(undefined), { value: { trashWorkspaceFolder: false } })
+  assert.deepEqual(validate({ trashWorkspaceFolder: true, home: ' /tmp/x ' }), {
+    value: { trashWorkspaceFolder: true, home: '/tmp/x' },
+  })
+  const bad = validate({ trashWorkspaceFolder: 'yes', nope: 1 })
+  assert.equal(Array.isArray(bad.issues), true)
+  assert.equal(bad.issues.length, 2)
+  assert.equal(bad.issues.some((issue) => issue.message.includes('unknown config key')), true)
+  assert.equal(Array.isArray(validate('not-an-object').issues), true)
 })

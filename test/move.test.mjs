@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { mkdir, readdir, readFile, rename, stat, writeFile } from 'node:fs/promises'
+import { mkdir, readdir, readFile, rename, rm, stat, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { BinError } from '../src/host/trash.js'
 import { projectKey } from '../src/host/paths.js'
@@ -48,6 +48,34 @@ test('正在跑的会话允许搬移：先停再搬，回执 stoppedRunning=true
     assert.equal(report.stoppedRunning, true)
     assert.equal(await exists(join(world.projectDir, 'session-1')), false)
     assert.deepEqual(world.registry.get(target.workspace.id).sessionIds, ['session-1'])
+  } finally {
+    await dispose(world.home)
+  }
+})
+
+test('移动带子代理的会话：只搬父会话，并在 warnings 里点名留下的子代理', async () => {
+  const world = await makeWorld({ sessionIds: ['session-1'], subagents: ['subagent-1'] })
+  try {
+    const target = await addTarget(world)
+    const report = await world.ops.relocate({ sessionId: 'session-1', targetWorkspaceId: target.workspace.id })
+    assert.equal(report.applied, 'moved')
+    assert.equal(report.warnings.some((warning) => warning.includes('subagent-1')), true)
+    assert.equal(await exists(join(world.projectDir, 'subagent-1')), true)
+  } finally {
+    await dispose(world.home)
+  }
+})
+
+test('跨区移动只改单条 header 索引，不做全量重建', async () => {
+  const world = await makeWorld({ sessionIds: ['session-1'] })
+  try {
+    let fullRefreshes = 0
+    world.registry.listStoredHeaders = async () => { fullRefreshes += 1; return [] }
+    world.registry.replaceHeaderIndex = async () => { fullRefreshes += 1 }
+    const target = await addTarget(world)
+    await world.ops.relocate({ sessionId: 'session-1', targetWorkspaceId: target.workspace.id })
+    assert.equal(fullRefreshes, 0)
+    assert.equal(world.registry.headers.get('session-1').cwd, target.path)
   } finally {
     await dispose(world.home)
   }
@@ -271,6 +299,29 @@ test('超大日志在整段读之前就被拒绝', async () => {
     )
     assert.equal(await exists(join(world.projectDir, 'session-1')), true)
     assert.deepEqual(await stagingEntries(world), [])
+  } finally {
+    await dispose(world.home)
+  }
+})
+
+test('目标工作区目录已消失或不是目录：拒绝移动，源与暂存区不动', async () => {
+  const world = await makeWorld({ sessionIds: ['session-1'] })
+  try {
+    const target = await addTarget(world)
+    await rm(target.path, { recursive: true, force: true })
+    await assert.rejects(
+      world.ops.relocate({ sessionId: 'session-1', targetWorkspaceId: target.workspace.id }),
+      binError('session-bin/target-path-missing'),
+    )
+    assert.equal(await exists(join(world.projectDir, 'session-1')), true)
+    assert.deepEqual(await stagingEntries(world), [])
+
+    const file = join(world.home, 'not-a-directory')
+    await writeFile(file, 'x')
+    await assert.rejects(
+      world.ops.relocate({ sessionId: 'session-1', targetPath: file }),
+      binError('session-bin/target-path-missing'),
+    )
   } finally {
     await dispose(world.home)
   }

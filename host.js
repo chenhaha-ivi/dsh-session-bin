@@ -9,4 +9,4 @@
  *
  * 这个文件只做转发，保证 `dsh.bundle.patch` 里那一行的入口稳定。
  */
-export { name, inject, apply } from './src/host/index.js'
+export { name, inject, apply, Config } from './src/host/index.js'

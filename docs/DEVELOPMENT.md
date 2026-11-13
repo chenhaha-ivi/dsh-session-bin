@@ -10,14 +10,20 @@
 | `host.js` → `src/host/index.js` | Host 入口：读配置、装配 runtime 与路由 |
 | `src/host/trash.js` | 回收站存储：目录布局、manifest、状态机、扫描 |
 | `src/host/move.js` | 会话跨工作区移动事务与崩溃恢复 |
-| `src/host/session.js` | 会话停活、驱逐、归属读写 |
+| `src/host/session.js` | 单会话删除 / 恢复事务（停活与驱逐交给 runtime） |
 | `src/host/workspace.js` | 工作区级事务，只服务旧条目与内部回归，UI 不暴露 |
 | `src/host/workspace-watch.js` | 监听 `domain/changed`，官方删除工作区后清理本地目录（默认关闭） |
 | `src/host/os-trash.js` | 系统回收站：macOS `~/.Trash` 优先，Electron `shell.trashItem` 兜底 |
-| `src/host/paths.js` | projectKey、目录编码、保护区判断 |
-| `src/host/routes.js` | `POST /api/session-bin` 单路由与鉴权 |
-| `src/host/runtime.js` | 把上面几组 ops 装到一起 |
+| `src/host/paths.js` | projectKey、目录编码、projectKey 碰撞检测 |
+| `src/host/routes.js` | `POST /api/session-bin` 单路由（鉴权由 connection 围栏负责） |
+| `src/host/runtime.js` | 停活/驱逐探针、会话存储根、路径状态；被三组 ops 共用 |
 | `client.js` | 客户端 UI：菜单项、页脚入口、面板、拖拽、提示 |
+
+## 配置
+
+`host.js` 导出 `Config`（Standard Schema 的 `~standard.validate`，不引入 schema 依赖）：
+`home`（非空字符串，缺省不覆盖）与 `trashWorkspaceFolder`（布尔，缺省 `false`）。
+cordis 在激活前校验，未知键/类型错误会直接报 ValidationError；`apply` 只读取规范化后的值。
 
 ## HTTP 接口
 
@@ -111,8 +117,8 @@ UI 不再暴露。
 
 ## 一致性验证
 
-- `node --test`：124 个用例（fake DSH home，全部写 `.test-tmp/`）。
-- `scripts/crash-injection.mjs`：在删除流程 7 个阶段 SIGKILL，断言恢复后
+- `node --test`：136 个用例（fake DSH home，全部写 `.test-tmp/`）。
+- `scripts/crash-injection.mjs`：在删除/移动流程 8 个阶段 SIGKILL，断言恢复后
   文件、归属、回收站三者最终一致。
 - 隔离实例 + 真浏览器（0.2.2-rc.1）：冷会话删除无「未分组」、恢复回原分组、
   打开中的会话跨区移动、`move` 在会话被 UI 持有时返回 `session-busy`。
@@ -125,7 +131,7 @@ node --test                       # 全部单测（fake DSH home，写在 .test-
 node scripts/m1-e2e.mjs           # 工作区端到端：plan → move → list → restore → move → empty
 node scripts/m3-session-e2e.mjs   # 单会话端到端：plan → move → list → restore
 node scripts/m3-move-e2e.mjs      # 跨区移动端到端：relocate + 读回校验
-node scripts/crash-injection.mjs  # 崩溃注入：7 个阶段 SIGKILL 后断言恢复收敛
+node scripts/crash-injection.mjs  # 崩溃注入：8 个阶段 SIGKILL 后断言恢复收敛
 node scripts/extract-runtime.mjs  # 从已安装 DSH 提取 runtime，供隔离实例自测
 node scripts/verify-live.mjs      # 只读验活：确认运行中的 DSH 挂上了 /api/session-bin
 node scripts/check-profile.mjs    # 安装前预检：profile 清单、软链、engines
@@ -152,7 +158,9 @@ node scripts/repair-duplicates.mjs # 修「同一会话被两个工作区记账�
 ## 已知工程边界
 
 - 一次移动把整段日志读进内存再 append，上限 256MB，超过直接拒绝。
-- Windows 的写锁是路径派生命名信号量（没有 `session.lock`），释放探针按 POSIX 写，未实测。
-- 逐会话模式只带走同一项目目录下的隐藏子代理；cwd 在别处的会留下并在确认框点名。
+- Windows 尚未真机验证；`.github/workflows/windows.yml` 跑单测与三个 e2e，
+  `crash-injection` 依赖 SIGKILL，在 Windows 上自动跳过。
+- 跨区移动只搬被拖的单条会话；子代理会话不随迁，会留在原工作区（Host 的工作区删除事务
+  会收集同项目子代理，但当前 UI 不暴露工作区删除）。
 - 恢复旧的工作区条目会新建登记（工作区 id 变化），要求原目录仍存在。
 - projectKey 碰撞时降级为逐会话处理；嵌套工作区会告警。

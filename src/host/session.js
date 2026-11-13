@@ -36,6 +36,23 @@ export function createSessionOps(deps) {
   const hooks = deps.hooks
 
   /**
+   * 删除确认框里的大小：优先用持久化的物理大小，避免对一个大会话做两次递归扫盘。
+   * stat 不可用（后端未物化/老实现）时退回目录统计。
+   * @param {string} sessionId
+   * @param {string} sessionDir
+   * @returns {Promise<number>}
+   */
+  async function sessionSize(sessionId, sessionDir) {
+    try {
+      const snapshot = await deps.ctx?.get?.('sessionPersistence')?.stat?.(sessionId)
+      if (typeof snapshot?.sizeBytes === 'number' && snapshot.sizeBytes > 0) return snapshot.sizeBytes
+    } catch {
+      // stat 不是关键路径：失败就退回递归统计。
+    }
+    return await directorySize(sessionDir)
+  }
+
+  /**
    * 从所有工作区的成员表里摘掉一个会话。
    *
    * 不能用 `workspace.sessionIds.includes(...)` 当门禁：那个 getter 会按 header 的 cwd
@@ -126,7 +143,7 @@ export function createSessionOps(deps) {
       projectKey: key,
       projectDir,
       sessionDir,
-      size: await directorySize(sessionDir),
+      size: await sessionSize(sessionId, sessionDir),
       sessionCount: 1,
       running,
     }
@@ -250,7 +267,12 @@ export function createSessionOps(deps) {
       const to = join(sessionsRoot, manifest.projectKey, encoded)
       const fromKind = await pathKind(from)
       if (fromKind !== 'dir') {
-        if ((await pathKind(to)) === 'dir') continue
+        if ((await pathKind(to)) === 'dir') {
+          // 上一次恢复在「目录已回位、还没 attach」时崩了：文件已经在目标位置，
+          // 仍要把它算作 restored，否则下面的 attach 循环会跳过它，会话变成未分组。
+          restored.push(session.id)
+          continue
+        }
         warnings.push(`session ${session.id} has no directory in the recycle bin`)
         continue
       }
@@ -277,6 +299,7 @@ export function createSessionOps(deps) {
         }
       }
     }
+    const attached = []
     if (workspace === undefined) {
       warnings.push('the original workspace is gone; the session was restored ungrouped')
     } else {
@@ -284,6 +307,7 @@ export function createSessionOps(deps) {
         if (!restored.includes(session.id) || workspace.sessionIds.includes(session.id)) continue
         try {
           await workspace.attachSession(session.id)
+          attached.push(session.id)
         } catch (error) {
           warnings.push(`attach ${session.id}: ${reason(error)}`)
         }
@@ -304,7 +328,7 @@ export function createSessionOps(deps) {
       workspaceId: workspace?.id,
       workspaceRestored: workspace !== undefined,
       restored,
-      attached: workspace === undefined ? [] : restored,
+      attached,
       warnings,
     }
   }
