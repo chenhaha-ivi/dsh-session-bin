@@ -1,7 +1,7 @@
 /**
  * 回收站存储：目录布局、manifest、状态机、扫描。
  *
- * 布局（与 PLAN.md §4 一致）：
+ * 布局（与 docs/DEVELOPMENT.md 的「回收站存储」一节一致）：
  *
  *   <DSH_HOME>/session-bin/
  *     <entryId>/

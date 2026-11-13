@@ -41,7 +41,6 @@
     "scripts/rename-checkout.mjs",
     "README.md",
     "INSTALL.md",
-    "RELEASE.md",
     "CHANGELOG.md",
     "LICENSE"
   ],

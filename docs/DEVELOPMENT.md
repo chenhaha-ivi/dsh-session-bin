@@ -2,6 +2,7 @@
 
 面向维护者。用户安装与使用见 [README](../README.md)、[INSTALL](../INSTALL.md)；
 面向用户的版本变化见 [CHANGELOG](../CHANGELOG.md)。更细的逐次改动看 `git log`。
+过程性文档（方案稿、任务拆分、发布清单）只放本机 `notes/`，该目录已 gitignore，不入库也不进 npm 包。
 
 ## 代码结构
 
@@ -149,11 +150,12 @@ node scripts/repair-duplicates.mjs # 修「同一会话被两个工作区记账�
    `docs/DETAIL*.md`，详情页只放 `docs/preview.svg` 一张图（640×300，无文字、脚本、外链）；
    `test/manifest.test.mjs` 会挡住漏项；
 4. CHANGELOG 只写用户能感知的变化，实现细节留在本文件；
-5. `npm pack --dry-run` 确认 `files` 覆盖 host/client/src/icon/locale/docs/三份文档；正式产物用
+5. `npm pack --dry-run` 确认 `files` 覆盖 host/client/src/icon/locale/docs 与 README/INSTALL/CHANGELOG；正式产物用
    `npm pack --pack-destination dist`，记 sha256，并解包跑 `import('./host.js')` 与资源校验；
 6. 打 annotated tag：`git tag -a v0.1.0 -m "dsh-session-bin 0.1.0"`（0.1.0 是改名后首个版本，旧包不补 tag）；
 7. `npm publish --registry=https://registry.npmjs.org`：本机默认 registry 是 npmmirror，必须显式覆盖；
-   账号是 `auth-and-writes` 2FA，发布会要 OTP。完整步骤与回滚见 [RELEASE.md](../RELEASE.md)。
+   账号是 `auth-and-writes` 2FA，发布会要 OTP。回滚：`npm unpublish` 只在发布后 72 小时内可用，
+   超时就发 patch 版本；撤包后从 profile 的 `dsh.profile.bundles` 里删掉该行并重启。
 
 ## 已知工程边界
 
