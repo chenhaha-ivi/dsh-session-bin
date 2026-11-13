@@ -6,8 +6,9 @@
 
 ## 1. 当前结论
 
-本地准备已完成：元数据、展示资源、文档、产物与冒烟都过了。剩下 3 件只有你能做的事：
-**发布时输入 2FA OTP**、**显式指定 npmjs registry**（本机默认是镜像）、**决定要不要先建 GitHub 仓库**（不阻塞 npm 发布）。
+本地准备已完成：元数据、展示资源、文档、产物与冒烟都过了。剩下 2 件只有你能做的事：
+**发布时输入 2FA OTP**、**显式指定 npmjs registry**（本机默认是镜像）。GitHub 仓库已配置为
+`https://github.com/chenhaha-ivi/dsh-session-bin`。
 
 | 项 | 状态 |
 |---|---|
@@ -16,18 +17,18 @@
 | 三个 e2e + 崩溃注入 | ✅ `m1-e2e`、`m3-session-e2e`、`m3-move-e2e`、`crash-injection` 全 OK |
 | 打包产物 | ✅ 28 个文件，约 78 kB（精确大小与校验值见仓库根目录 `CHECKSUMS`，不随包发布） |
 | `npm publish --dry-run` | ✅ 通过，目标 npmjs，无告警 |
-| 元数据 | ✅ `author: webchenming`；按你的决定，`repository` / `homepage` / `bugs` 暂不写（没有远端仓库） |
+| 元数据 | ✅ `author: webchenming`；`repository` / `homepage` / `bugs` 已指向 `https://github.com/chenhaha-ivi/dsh-session-bin` |
 | npm 登录 | ✅ `npm whoami` = `webchenming` |
 | 默认 registry | ❌ 指向 `registry.npmmirror.com`，发布必须显式覆盖 |
 | 2FA | ⚠️ `auth-and-writes`，`npm publish` 会要求一次性验证码（OTP 约 30 秒有效，建议在终端交互执行） |
-| GitHub 仓库 | ⚠️ 尚无远端；`repository` 字段因此留空。建好后补一版元数据即可（版本号可发 0.1.1） |
+| GitHub 仓库 | ✅ `origin` = `https://github.com/chenhaha-ivi/dsh-session-bin.git`；首次推送后 CI 生效 |
 
 ## 2. 发布前你需要做的事
 
 1. **2FA**：账号为 `auth-and-writes`。在终端执行第 6 节的命令，按提示输入 OTP。
 2. **registry**：命令里已显式写 `--registry=https://registry.npmjs.org`，不要省。
-3. **仓库（可选，不阻塞）**：要写 `repository` / `homepage` / `bugs`，先建一个 GitHub 仓库并 push，
-   然后把 URL 给我（或在 `package.json` 里补上后重打一次包）。当前产物不带仓库链接。
+3. **仓库**：已写 `repository` / `homepage` / `bugs` 并指向 `https://github.com/chenhaha-ivi/dsh-session-bin`；
+   以后迁地址时改 `package.json` 后重打一次包即可。
 4. **缓存（通常不用管）**：本机 `~/.npm` 权限正常；若发布报缓存权限错误，命令里已带 `--cache ./.npm-cache`。
 
 ## 3. 本轮已完成的准备
@@ -120,12 +121,13 @@ git tag -n                    # v0.1.0  dsh-session-bin 0.1.0
 git log --oneline -3
 ```
 
-没有 push（仓库还没有远端）。建好 GitHub 仓库后：
+`origin` 已配置为 `https://github.com/chenhaha-ivi/dsh-session-bin.git`，首次推送：
 
 ```sh
-git remote add origin <仓库 URL>
 git push -u origin main --tags
 ```
+
+推送后 GitHub Actions 的 `windows` 工作流会跑单测与三个 e2e。
 
 ## 10. 未验证边界
 
@@ -133,6 +135,6 @@ git push -u origin main --tags
 - npm 安装链路（`dsh plugin add dsh-session-bin`）要等真正发布后才能验证。
 - DSH Plugins 页里的实际排版（标题/描述/详情图/明暗主题）未在真机目检；只验证了资源文件、
   预览图的独立渲染与元数据解析。
-- GitHub 仓库尚未创建，`repository` / `homepage` / `bugs` 为空。
+- GitHub 仓库已配置，但 `origin` 首次推送与 Windows CI 尚未验证。
 - Windows CI 工作流（`.github/workflows/windows.yml`）已加入，但尚未在 GitHub 上实际跑过；
   Windows 仍按「未真机验证」看待。

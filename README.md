@@ -5,7 +5,7 @@ DSH 的会话回收站：删掉的会话先放进来，能恢复、也能彻底�
 > 当前版本 **0.1.0**：包从 `dsh-workspace-bin` 改名为 `dsh-session-bin`，版本号重新起算。
 > 适配 DSH **0.2.2-rc.1 / rc.2**（desktop profile），通过 DSH 的服务扩展点工作，不改 `app.asar`、不改核心包；
 > 少数官方索引字段与侧栏 DOM 约定是探测式读取，升级 DSH 后需要回归。
-> 安装与验收：[INSTALL.md](INSTALL.md) · 版本变化：[CHANGELOG.md](CHANGELOG.md) · 发布清单：[RELEASE.md](RELEASE.md) · 开发与内部实现：[docs/DEVELOPMENT.md](docs/DEVELOPMENT.md)
+> 安装与验收：[INSTALL.md](INSTALL.md) · 版本变化：[CHANGELOG.md](CHANGELOG.md) · 发布清单：[RELEASE.md](RELEASE.md) · 开发与内部实现：[docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) · 源码：[GitHub](https://github.com/chenhaha-ivi/dsh-session-bin)
 
 ## 能做什么
 

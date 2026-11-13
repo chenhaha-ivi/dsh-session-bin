@@ -18,6 +18,9 @@ test('package.json 的 DSH 清单字段齐全', async () => {
   assert.match(pkg.engines.node, />=22/)
   assert.equal(pkg.private, undefined)
   assert.equal(pkg.author, 'webchenming')
+  assert.equal(pkg.repository.url, 'git+https://github.com/chenhaha-ivi/dsh-session-bin.git')
+  assert.equal(pkg.homepage, 'https://github.com/chenhaha-ivi/dsh-session-bin#readme')
+  assert.equal(pkg.bugs.url, 'https://github.com/chenhaha-ivi/dsh-session-bin/issues')
   assert.equal(pkg.scripts.prepublishOnly, 'npm test')
   assert.equal(pkg.exports['./locale/*.json'], './locale/*.json')
   for (const file of [

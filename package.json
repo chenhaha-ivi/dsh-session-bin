@@ -5,6 +5,14 @@
   "type": "module",
   "license": "MIT",
   "author": "webchenming",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/chenhaha-ivi/dsh-session-bin.git"
+  },
+  "homepage": "https://github.com/chenhaha-ivi/dsh-session-bin#readme",
+  "bugs": {
+    "url": "https://github.com/chenhaha-ivi/dsh-session-bin/issues"
+  },
   "keywords": [
     "dsh",
     "dsh-plugin",
