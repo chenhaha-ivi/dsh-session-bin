@@ -18,7 +18,11 @@ cd ~/.dsh/profiles/desktop
 cp package.json package.json.bak-before-session-bin
 ```
 
-### 方式 A：从 npm 安装（发布后，推荐）
+### 方式 A：从 npm 安装（0.1.0 审批通过后，推荐）
+
+> 0.1.0 目前在 npm staged publishing 队列中等待 2FA 审批。
+> 在 `npm view dsh-session-bin@0.1.0` 能查到版本之前，请先走方式 B；
+> 否则只会装到 `0.0.0-stage` 占位包。
 
 ```bash
 dsh plugin --profile desktop add dsh-session-bin
