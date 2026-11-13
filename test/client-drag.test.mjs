@@ -63,16 +63,21 @@ function makeNode(attributes = {}) {
       }
       return false
     },
-    querySelectorAll() {
+    querySelectorAll(selector) {
+      const prefix = /^\[data-row-key\^="([^"]*)"\]$/.exec(selector)?.[1] ?? null
       const found = []
       const walk = (element) => {
         for (const child of element.children) {
-          if ((child.getAttribute('data-row-key') ?? '').startsWith('workspace:')) found.push(child)
+          const key = child.getAttribute('data-row-key') ?? ''
+          if (prefix === null || key.startsWith(prefix)) found.push(child)
           walk(child)
         }
       }
       walk(node)
       return found
+    },
+    querySelector(selector) {
+      return node.querySelectorAll(selector)[0] ?? null
     },
   }
   return node
@@ -168,6 +173,8 @@ test('dragstart 记住来源；跨组 dragover 才接管并高亮；drop 调 rel
   assert.equal(event.calls.at(-1).stopped, true)
   assert.equal(target.classList.contains('wsbin-drop-target'), true)
   assert.equal(source.classList.contains('wsbin-drop-target'), false)
+  // 跨组时复刻官方蓝色插入线：落在会话行上默认画在该行下方。
+  assert.equal(targetSessionRow.classList.contains('wsbin-drop-after'), true)
 
   const requests = []
   globalThis.fetch = async (url, init) => {
@@ -177,6 +184,7 @@ test('dragstart 记住来源；跨组 dragover 才接管并高亮；drop 调 rel
   listeners.get('drop')(event.track('drop', targetSessionRow))
   assert.equal(event.calls.at(-1).defaultPrevented, true)
   assert.equal(target.classList.contains('wsbin-drop-target'), false, '投放后清除高亮')
+  assert.equal(targetSessionRow.classList.contains('wsbin-drop-after'), false, '投放后清除插入线')
   await new Promise((settle) => setTimeout(settle, 0))
   assert.equal(requests.length, 1)
   assert.equal(requests[0].body.endpoint, 'relocate')
