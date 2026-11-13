@@ -118,7 +118,7 @@ UI 不再暴露。
 
 ## 一致性验证
 
-- `node --test`：136 个用例（fake DSH home，全部写 `.test-tmp/`）。
+- `node --test`：138 个用例（fake DSH home，全部写 `.test-tmp/`）。
 - `scripts/crash-injection.mjs`：在删除/移动流程 8 个阶段 SIGKILL，断言恢复后
   文件、归属、回收站三者最终一致。
 - 隔离实例 + 真浏览器（0.2.2-rc.1）：冷会话删除无「未分组」、恢复回原分组、
@@ -160,8 +160,8 @@ node scripts/repair-duplicates.mjs # 修「同一会话被两个工作区记账�
 ## 已知工程边界
 
 - 一次移动把整段日志读进内存再 append，上限 256MB，超过直接拒绝。
-- Windows 尚未真机验证；`.github/workflows/windows.yml` 跑单测与三个 e2e，
-  `crash-injection` 依赖 SIGKILL，在 Windows 上自动跳过。
+- Windows CI 已通过（`windows-latest`，138 tests + 三个 e2e）；`crash-injection` 依赖 SIGKILL，在 Windows 上自动跳过。
+  仍建议在真实 Windows 桌面环境做一次手工删除/恢复/拖拽。
 - 跨区移动只搬被拖的单条会话；子代理会话不随迁，会留在原工作区（Host 的工作区删除事务
   会收集同项目子代理，但当前 UI 不暴露工作区删除）。
 - 恢复旧的工作区条目会新建登记（工作区 id 变化），要求原目录仍存在。

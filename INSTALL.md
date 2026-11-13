@@ -152,8 +152,8 @@ node scripts/verify-live.mjs --url http://127.0.0.1:56832 --token <启动日志�
   UI 不再禁用菜单/拖拽，Host 也不再返回 `session-bin/session-running`。
 - 插件依赖 DSH 0.2.2 的若干服务索引字段与侧栏 DOM 约定；升级到新的 0.2.x 后建议重跑
   `node --test`、三个 e2e 和真机删除/恢复/拖拽。
-- Windows 尚未在真机验证；仓库的 `windows-latest` CI 会跑单测与三个 e2e，
-  `crash-injection` 依赖 SIGKILL，在 Windows 上自动跳过。首次 CI 绿色前按未实测看待。
+- Windows CI 已通过（`windows-latest`：138 tests + 三个 e2e）；`crash-injection` 依赖 SIGKILL，
+  在 Windows 上自动跳过。仍建议在真实 Windows 桌面手工跑一次删除/恢复/拖拽。
 - 恢复旧的工作区条目会新建登记（工作区 id 变化），标题与列表位置会还原。
 - 工作区删除走 DSH 自带入口：会话日志保留、会话落「未分组」。**本地文件夹**默认不动；
   配置 `trashWorkspaceFolder: true` 后才由插件送进系统回收站（保护区/跨卷会跳过并记日志）。

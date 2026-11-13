@@ -1,5 +1,5 @@
 # dsh-session-bin 0.1.0 release artifact
 # verify: shasum -a 256 -c CHECKSUMS
-39d39f76289ddd622300eb567dfecf5bebe6696b355fbb9df56678e9c979ce6b  dist/dsh-session-bin-0.1.0.tgz
-# sha1:   033d82f3437209e08745afe99bf2c3cd500fae79
-# bytes:  76747
+d4fe325b9731624fe6a7885ca4f3c128b059a49c0280a5781dd45681840e3d09  dist/dsh-session-bin-0.1.0.tgz
+# sha1:   864ab13fc2763170cfa80f46c8105d997f52ca18
+# bytes:  76757

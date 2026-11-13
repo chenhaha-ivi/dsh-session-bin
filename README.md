@@ -101,8 +101,8 @@ DSH home、会话存储根、宿主进程 cwd、其它嵌套工作区的祖先�
 - 一次移动最多读 256MB 日志（按物理压缩大小判断），超过直接拒绝，而不是把进程拖死。
 - 插件依赖 DSH 0.2.2 的若干服务索引字段与侧栏 DOM 约定（`data-row-key`、插入线类名）；
   升级到新的 0.2.x 后建议重跑一次 `node --test`、三个 e2e 和真机删除/恢复/拖拽。
-- Windows 尚未在真机验证；仓库提供 `windows-latest` CI（[.github/workflows/windows.yml](.github/workflows/windows.yml)），
-  会跑单测与三个 e2e。首次绿色之前，Windows 的写锁/rename 结论仍按未实测看待。
+- Windows CI 已通过（`windows-latest`：138 tests + 三个 e2e，[workflow](.github/workflows/windows.yml)）；
+  `crash-injection` 依赖 SIGKILL，在 Windows 上自动跳过。仍建议在真实 Windows 桌面手工跑一次删除/恢复/拖拽。
 - 面板一次显示 40 条，更多要点「显示更多」。
 
 ## 会话同时出现在两个工作区？
