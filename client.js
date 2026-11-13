@@ -67,6 +67,7 @@ window.__ModuleLoader__.load({
       'bin.failed': '失败',
       'bin.purging': '正在删除…',
       'bin.clear': '清空回收站',
+      'bin.showMore': '显示更多（还有 {count} 条）',
       'bin.clearing': '正在清空…',
       'bin.close': '关闭',
       'bin.confirmPurge': '永久删除「{title}」？字节会被真正删掉，无法恢复。',
@@ -126,6 +127,7 @@ window.__ModuleLoader__.load({
       'bin.failed': 'Failed',
       'bin.purging': 'Deleting…',
       'bin.clear': 'Empty the bin',
+      'bin.showMore': 'Show more ({count} left)',
       'bin.clearing': 'Emptying…',
       'bin.close': 'Close',
       'bin.confirmPurge': 'Delete "{title}" permanently? Its bytes are removed for good.',
@@ -238,6 +240,9 @@ window.__ModuleLoader__.load({
 .wsbin-linkbtn:disabled { opacity: .4; cursor: not-allowed; }
 .wsbin-linkbtn-danger { color: var(--dsw-alias-state-error-primary, #e5484d); }
 .wsbin-linkbtn-danger:hover:not(:disabled) { background: var(--dsw-alias-interactive-bg-hover-danger, rgba(229,72,77,.14)); color: var(--dsw-alias-state-error-primary, #e5484d); }
+.wsbin-more { align-self: center; border: none; background: transparent; color: var(--dsw-alias-label-secondary, #a8a8ad); font: inherit;
+  font-size: 12px; line-height: 18px; padding: 6px 10px; border-radius: 6px; cursor: pointer; }
+.wsbin-more:hover { background: var(--dsw-alias-interactive-bg-hover, rgba(127,127,127,.14)); color: var(--dsw-alias-label-primary, #f5f5f5); }
 .wsbin-empty { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 26px 0 22px; color: var(--dsw-alias-label-secondary, #a8a8ad); }
 .wsbin-empty-icon { opacity: .45; }
 .wsbin-footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 2px;
@@ -591,6 +596,7 @@ window.__ModuleLoader__.load({
 
     /** 面板 + 删除确认 + 结果提示共用一个 overlay 注册位。 */
     function WorkspaceBinOverlay({ t }) {
+      const PAGE_SIZE = 40
       const request = useStoreValue(requestStore)
       const open = useStoreValue(binStore)
       const toast = useStoreValue(toastStore)
@@ -600,6 +606,10 @@ window.__ModuleLoader__.load({
       const [busy, setBusy] = React.useState(false)
       const [rowBusy, setRowBusy] = React.useState(null)
       const [confirm, setConfirm] = React.useState(null)
+      const [visibleCount, setVisibleCount] = React.useState(PAGE_SIZE)
+      React.useEffect(() => {
+        if (open === true) setVisibleCount(PAGE_SIZE)
+      }, [open])
       const [listing, setListing] = React.useState({ items: [], broken: [], error: null, loaded: false })
 
       // 打开确认框时先拿 plan。
@@ -756,7 +766,8 @@ window.__ModuleLoader__.load({
         ]),
       ])
 
-      const rows = listing.items.map((entry) => h('div', { key: entry.id, className: 'wsbin-row' }, [
+      const shownCount = Math.min(visibleCount, listing.items.length)
+      const rows = listing.items.slice(0, shownCount).map((entry) => h('div', { key: entry.id, className: 'wsbin-row' }, [
         h('div', { key: 'head', className: 'wsbin-row-head' }, [
           h('span', { key: 'badge', className: 'wsbin-badge' }, entry.kind === 'workspace' ? t('bin.workspace') : t('bin.session')),
           h('span', { key: 'title', className: 'wsbin-row-title', title: entry.title || entry.id }, entry.title || entry.id),
@@ -781,6 +792,14 @@ window.__ModuleLoader__.load({
           [t('bin.sessions', { count: entry.sessionCount }), entry.size > 0 ? formatBytes(entry.size) : null, entry.state === 'failed' ? t('bin.failed') : null].filter(Boolean).join(' · ')),
         h('div', { key: 'path', className: 'wsbin-row-path', title: entry.workspace?.path ?? '' }, entry.workspace?.path ?? ''),
       ]))
+      const more = listing.items.length > shownCount
+        ? h('button', {
+            key: 'more',
+            type: 'button',
+            className: 'wsbin-more',
+            onClick: () => setVisibleCount(shownCount + PAGE_SIZE),
+          }, t('bin.showMore', { count: listing.items.length - shownCount }))
+        : null
 
       const confirmBar = confirm === null ? null : h('div', { key: 'confirm', className: 'wsbin-confirm', role: 'alertdialog' }, [
         h('p', { key: 'text', style: { margin: 0, fontSize: '13px', lineHeight: '20px' } },
@@ -816,6 +835,7 @@ window.__ModuleLoader__.load({
             h('span', { key: 'text' }, t('bin.empty')),
           ]) : null,
           h('div', { key: 'list', className: 'wsbin-list' }, rows),
+          more,
           confirmBar,
           h('div', { key: 'footer', className: 'wsbin-footer' }, [
             h('button', {

@@ -158,3 +158,16 @@ test('原子写不留临时文件', async () => {
     await dispose(home)
   }
 })
+
+test('manifest 的 size 可选，但给了就必须是非负有限数', async () => {
+  const { validateManifest } = await import('../src/host/trash.js')
+  const base = {
+    version: 1, kind: 'session', state: 'done', createdAt: new Date().toISOString(),
+    projectKey: '--x--', workspace: null, sessions: [{ id: 'session-1' }],
+  }
+  assert.deepEqual(validateManifest({ ...base, size: 0 }), [])
+  assert.deepEqual(validateManifest({ ...base, size: 123 }), [])
+  assert.equal(validateManifest({ ...base, size: -1 }).length > 0, true)
+  assert.equal(validateManifest({ ...base, size: Number.NaN }).length > 0, true)
+  assert.equal(validateManifest({ ...base, size: '12' }).length > 0, true)
+})

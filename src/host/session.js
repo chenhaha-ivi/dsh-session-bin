@@ -156,6 +156,7 @@ export function createSessionOps(deps) {
             title: plan.workspace.title,
           },
       projectKey: plan.projectKey,
+      size: plan.size,
       sessions: [{
         id: session.id,
         title: session.title,

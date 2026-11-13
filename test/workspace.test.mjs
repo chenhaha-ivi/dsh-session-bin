@@ -337,6 +337,23 @@ test('list 给面板足够的信息', async () => {
     assert.equal(row.workspace.path, world.workspacePath)
     assert.equal(row.sessionCount, 1)
     assert.equal(row.size > 0, true)
+    // 统计一次后回写 manifest，下次 list 直接读，不再递归扫盘。
+    const manifest = await world.bin.readManifest(row.id)
+    assert.equal(manifest.size, row.size)
+  } finally {
+    await dispose(world.home)
+  }
+})
+
+test('manifest 里已有 size 时 list 不再递归扫盘', async () => {
+  const world = await makeWorld({ sessionIds: ['session-1'] })
+  try {
+    await world.ops.execute(await world.ops.survey({ workspaceId: 'ws-1' }))
+    const [entry] = (await world.bin.scan()).entries
+    await world.bin.writeManifest(entry.id, { ...entry.manifest, size: 12345 })
+    world.bin.entrySize = async () => { throw new Error('entrySize should not be called') }
+    const listing = await world.ops.list()
+    assert.equal(listing.entries[0].size, 12345)
   } finally {
     await dispose(world.home)
   }

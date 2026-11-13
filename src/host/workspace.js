@@ -433,6 +433,7 @@ export function createWorkspaceOps(deps) {
         index: plan.workspace.index,
       },
       projectKey: plan.projectKey,
+      size: plan.size,
       sessions: plan.sessions.map((session) => ({
         id: session.id,
         title: session.title,
@@ -724,7 +725,15 @@ export function createWorkspaceOps(deps) {
             },
         sessions: entry.manifest.sessions.map((session) => ({ id: session.id, title: session.title })),
         sessionCount: entry.manifest.sessions.length,
-        size: await bin.entrySize(entry.id),
+        // 大回收站优化：manifest 里存过 size 就直接用；老条目统计一次后补写，避免每次 list 都递归扫盘。
+        size: await (async () => {
+          // 0 表示「源目录统计时是空的」，这时条目里至少还有 manifest，补一次实际大小。
+          if (typeof entry.manifest.size === 'number' && entry.manifest.size > 0) return entry.manifest.size
+          const size = await bin.entrySize(entry.id)
+          const updated = await bin.recordSize(entry.id, size)
+          if (updated !== undefined) entry.manifest = updated
+          return size
+        })(),
       })
     }
     return { root, entries: rows, broken }

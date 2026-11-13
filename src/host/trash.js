@@ -104,6 +104,9 @@ export function validateManifest(value) {
   if (typeof value.projectKey !== 'string' || value.projectKey.length === 0) {
     problems.push('projectKey must be a non-empty string')
   }
+  if (value.size !== undefined && (typeof value.size !== 'number' || !Number.isFinite(value.size) || value.size < 0)) {
+    problems.push('size must be a non-negative finite number when present')
+  }
   if (value.kind === 'workspace' && !isWorkspaceRecord(value.workspace)) {
     problems.push('kind=workspace requires a workspace record {id, path, title, createdAt, updatedAt}')
   }
@@ -346,6 +349,29 @@ function createBinApi(root) {
     return await directorySize(entryDir(id))
   }
 
+  /**
+   * 把条目字节数补写进 manifest（老条目没有 size 时懒补）。
+   *
+   * 递归统计是 O(字节) 的；每次 list 都扫一遍会让大回收站越用越慢，所以统计一次写回。
+   * 失败不抛：这只是缓存，下一次 list 还会再试。
+   * @param {string} id 条目 id。
+   * @param {number} size 已统计出的字节数。
+   * @returns {Promise<object | undefined>} 更新后的 manifest（失败/无需更新时为 undefined）。
+   */
+  async function recordSize(id, size) {
+    try {
+      const manifest = await readManifest(id)
+      // 0 只可能是「源目录统计时为空」，条目本身至少还有 manifest，按未缓存处理。
+      if (typeof manifest.size === 'number' && manifest.size > 0) return manifest
+      const next = { ...manifest, size }
+      if (validateManifest(next).length > 0) return manifest
+      await writeManifest(id, next)
+      return next
+    } catch {
+      return undefined
+    }
+  }
+
   /** 回收站根目录。 */
   return {
     root,
@@ -360,6 +386,7 @@ function createBinApi(root) {
     scan,
     removeEntry,
     entrySize,
+    recordSize,
   }
 }
 
