@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
+import { readFileSync } from 'node:fs'
 
 /**
  * 轻量渲染冒烟：不实现 React 协调，只按函数组件递归展开 JSX 树。
@@ -165,6 +166,21 @@ test('运行中会话搬移确认框：点确认才发 relocate', async () => {
   assert.equal(requests[0].endpoint, 'relocate')
   assert.deepEqual(requests[0].payload, { sessionId: 'session-1', targetWorkspaceId: 'ws-2' })
   assert.equal(exported.__stores.moveRequestStore.get(), null)
+})
+
+test('所有字面量 t(...) 都有中英词条（防再出现原始 key）', async () => {
+  const exported = await loadClient()
+  const { ctx, calls } = fakeClientCtx()
+  exported.apply(ctx)
+  const dictionaries = calls.locales[0].dictionaries
+  const source = readFileSync(new URL('../client.js', import.meta.url), 'utf8')
+  const keys = new Set()
+  for (const match of source.matchAll(/\bt\('([A-Za-z0-9_.-]+)'/g)) keys.add(match[1])
+  assert.equal(keys.size > 20, true)
+  for (const key of keys) {
+    assert.equal(typeof dictionaries.zh[key], 'string', `zh missing ${key}`)
+    assert.equal(typeof dictionaries.en[key], 'string', `en missing ${key}`)
+  }
 })
 
 test('会话菜单行能渲染并触发 requestDelete', async () => {
