@@ -30,7 +30,7 @@ import { encodeSegment, projectKey } from './paths.js'
  */
 export function createSessionOps(deps) {
   const { registry, bin, runtime } = deps
-  const { reason, isLive, quiesce, titleOf, pathKind, requireSessionsRoot, announceRemoved, log } = runtime
+  const { reason, isLive, isRunning, quiesce, titleOf, pathKind, requireSessionsRoot, announceRemoved, log } = runtime
   const now = deps.now ?? runtime.now ?? (() => Date.now())
   /** 测试注入的崩溃点（生产不传）。 */
   const hooks = deps.hooks
@@ -70,6 +70,9 @@ export function createSessionOps(deps) {
     const callerSessionId = typeof request?.callerSessionId === 'string' ? request.callerSessionId : undefined
     if (callerSessionId === sessionId) {
       throw new BinError('workspace-bin/caller-session', 'refusing to delete the session this operation is running in', { callerSessionId })
+    }
+    if (isRunning(sessionId)) {
+      throw new BinError('workspace-bin/session-running', `session ${sessionId} is running; stop it before recycling`, { sessionId })
     }
 
     let header
@@ -135,7 +138,10 @@ export function createSessionOps(deps) {
    * @param {object} plan `surveySession` 的返回值。
    */
   async function executeSession(plan) {
-    const session = plan.session
+    const session = plan?.session
+    if (session?.id !== undefined && isRunning(session.id)) {
+      throw new BinError('workspace-bin/session-running', `session ${session.id} is running; stop it before recycling`, { sessionId: session.id })
+    }
     const warnings = []
     const quiesced = await quiesce(session.id)
     warnings.push(...quiesced.errors)

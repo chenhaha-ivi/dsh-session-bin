@@ -1,11 +1,11 @@
-# 安装与验收清单（M4-3）
+# 安装与验收清单
 
 > 这一步会写 `~/.dsh` 并重启 DSH。重启会结束当前正在跑的所有会话——请在**没有正在进行的对话**时做，
 > 或者先确认这些会话可以中断。
 
 ## 0. 前置条件
 
-- DSH **0.2.2-rc.1**（desktop profile），Node ≥ 22，pnpm 可用。
+- DSH **0.2.2-rc.1 / rc.2**（desktop profile），Node ≥ 22，pnpm 可用。
 - 包在 `dsh-workspace-bin/` 下，`package.json` 的 `dsh.engines.dsh` 写着兼容范围。
 - 如果装了 `dsh-plugin-session-purge`，先决定留哪个：两者都有会话回收站，功能重叠，建议二选一。
 
@@ -98,11 +98,12 @@ node scripts/verify-live.mjs --url http://127.0.0.1:56832 --token <启动日志�
 
 ## 5. 已知限制
 
-- Desktop profile 的 UI 验收（本清单 1~10 步）仍需人工执行；隔离实例只验证了 Host 路由与事务。
+- Desktop profile 的 UI 验收（本清单 1~12 步）仍需人工执行；隔离实例只验证了 Host 路由与事务。
 - 跨区移动一次最多读 256MB 日志，超过会拒绝。
 - 逐会话模式只带走工作区成员与**同一项目目录**下的隐藏子代理；cwd 在别处的子代理会留下并在
   确认框里点名。
 - Windows 的写锁是路径派生的命名信号量（没有 `session.lock`），释放探针按 POSIX 写的，未实测。
 - 恢复旧的工作区条目会新建登记（工作区 id 变化），标题与列表位置会还原。
-- 工作区删除走 DSH 自带入口：会话日志保留、会话落「未分组」；**本地文件夹**由插件送进系统回收站
-  （保护区/跨卷会跳过并记日志）。不带 Electron 的独立 `dsh web` 只有 macOS 有 `~/.Trash` 退路。
+- 工作区删除走 DSH 自带入口：会话日志保留、会话落「未分组」。**本地文件夹**默认不动；
+  配置 `trashWorkspaceFolder: true` 后才由插件送进系统回收站（保护区/跨卷会跳过并记日志）。
+  不带 Electron 的独立 `dsh web` 只有 macOS 有 `~/.Trash` 退路。

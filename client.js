@@ -76,6 +76,7 @@ window.__ModuleLoader__.load({
       'bin.confirmNo': '再想想',
       'error.unknown-workspace': '这个工作区已经不在注册表里了。',
       'error.caller-session': '不能删除正在执行这次操作的工作区。',
+      'error.session-running': '这个会话正在运行；先停止它，再回收或搬移。',
       'error.no-sessions-root': '定位不到会话存储根目录，为安全起见拒绝操作。',
       'error.session-busy': '还有会话在写日志，停不下来，已取消（没动任何文件）。正在查看这个工作区时，先切到别的会话再删。',
       'error.project-unreadable': '项目目录读不了，已取消。',
@@ -130,6 +131,7 @@ window.__ModuleLoader__.load({
       'bin.confirmNo': 'Keep them',
       'error.unknown-workspace': 'That workspace is no longer in the registry.',
       'error.caller-session': 'The workspace running this operation cannot delete itself.',
+      'error.session-running': 'This session is running; stop it before recycling or moving it.',
       'error.no-sessions-root': 'The session storage root could not be located, so the operation was refused.',
       'error.session-busy': 'Some sessions are still writing and could not be stopped; nothing was moved. If you are viewing this workspace, switch to another session and retry.',
       'error.project-unreadable': 'The project directory cannot be read; nothing was moved.',
@@ -149,6 +151,7 @@ window.__ModuleLoader__.load({
     const REFUSAL_KEYS = {
       'workspace-bin/unknown-workspace': 'error.unknown-workspace',
       'workspace-bin/caller-session': 'error.caller-session',
+      'workspace-bin/session-running': 'error.session-running',
       'workspace-bin/no-sessions-root': 'error.no-sessions-root',
       'workspace-bin/session-busy': 'error.session-busy',
       'workspace-bin/project-unreadable': 'error.project-unreadable',

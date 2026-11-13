@@ -76,6 +76,21 @@ export function createRuntime(deps) {
     return false
   }
 
+  /**
+   * 会话是否**正在跑一轮**（不只是打开着）：官方 agent 的 status 是 `running`。
+   * 空闲但打开的会话由 {@link isLive} 判定，仍然允许停活后搬运/回收。
+   * @param {string} sessionId
+   * @returns {boolean}
+   */
+  function isRunning(sessionId) {
+    try {
+      const agent = ctx?.get?.('agents')?.get?.(sessionId)
+      return agent?.status === 'running'
+    } catch {
+      return false
+    }
+  }
+
   /** 读一个会话的缓存标题（只读；拿不到返回空串）。 */
   async function titleOf(sessionId) {
     try {
@@ -195,6 +210,7 @@ export function createRuntime(deps) {
     currentSessionsRoot,
     requireSessionsRoot,
     isLive,
+    isRunning,
     titleOf,
     quiesce,
     announceRemoved,

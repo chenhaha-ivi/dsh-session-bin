@@ -196,14 +196,16 @@ export function createFakeSessions(options = {}) {
 /**
  * 假 agents 服务（`ctx.get('agents')`）：官方注册表只有 `detachEntered(entry)`
  * 这一条驱逐路径，插件必须走它，否则 agent 一直活着、`isLive` 永远为真。
- * @param {{live?: string[], detachable?: boolean}} [options]
+ * @param {{live?: string[], running?: string[], detachable?: boolean}} [options]
  */
 export function createFakeAgents(options = {}) {
   const live = new Set(options.live ?? [])
+  const running = new Set(options.running ?? [])
+  const view = (id) => (live.has(id) ? { id, status: running.has(id) ? 'running' : 'idle' } : undefined)
   const agents = {
-    get: (id) => (live.has(id) ? { id } : undefined),
+    get: view,
     store: {
-      get: (id) => (live.has(id) ? { id } : undefined),
+      get: view,
     },
     detachEntered: (entry) => {
       if (options.detachable === false) throw new Error('agent eviction refused (test)')
@@ -220,6 +222,7 @@ export function createFakeAgents(options = {}) {
  * @param {string[]} [options.sessionIds] 工作区名下的会话 id
  * @param {string[]} [options.extraDirs] 项目目录里多出来的会话目录
  * @param {string[]} [options.live] 活会话
+ * @param {string[]} [options.running] 正在跑回合的会话（agent status=running）
  * @param {boolean} [options.detachable] 活会话能否被释放
  * @param {boolean} [options.deleteFails] 注册表删除是否失败
  * @param {string[]} [options.archived]
@@ -268,7 +271,7 @@ export async function makeWorld(options = {}) {
     registry.sessionPaths.set(id, workspacePath)
   }
   const { sessions, live } = createFakeSessions({ live: options.live, detachable: options.detachable })
-  const { agents, live: liveAgents } = createFakeAgents({ live: options.live, detachable: options.agentsDetachable })
+  const { agents, live: liveAgents } = createFakeAgents({ live: options.live, running: options.running, detachable: options.agentsDetachable })
   const deletedCacheRows = []
   const cacheRows = new Map()
   const services = {

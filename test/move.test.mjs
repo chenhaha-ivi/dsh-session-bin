@@ -39,6 +39,22 @@ async function stagingEntries(world) {
   }
 }
 
+test('正在跑的会话拒绝搬移，源目录与归属不动', async () => {
+  const world = await makeWorld({ sessionIds: ['session-1'], live: ['session-1'], running: ['session-1'] })
+  try {
+    const target = await addTarget(world)
+    await assert.rejects(
+      world.ops.relocate({ sessionId: 'session-1', targetWorkspaceId: target.workspace.id }),
+      binError('workspace-bin/session-running'),
+    )
+    assert.equal(await exists(join(world.projectDir, 'session-1')), true)
+    assert.deepEqual(world.registry.get('ws-1').sessionIds, ['session-1'])
+    assert.deepEqual(world.registry.get(target.workspace.id).sessionIds, [])
+  } finally {
+    await dispose(world.home)
+  }
+})
+
 test('跨区移动：后继 artifact 建到目标、源目录删除、归属改写', async () => {
   const world = await makeWorld({ sessionIds: ['session-1'] })
   try {

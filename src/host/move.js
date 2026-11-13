@@ -50,7 +50,7 @@ const MAX_INLINE_BYTES = 256 * 1024 * 1024
  */
 export function createMoveOps(deps) {
   const { ctx, registry, runtime } = deps
-  const { reason, quiesce, requireSessionsRoot, log } = runtime
+  const { reason, isRunning, quiesce, requireSessionsRoot, log } = runtime
   const now = deps.now ?? runtime.now ?? (() => Date.now())
   /** 测试注入的崩溃点（生产不传）。 */
   const hooks = deps.hooks
@@ -210,6 +210,9 @@ export function createMoveOps(deps) {
     }
     if (typeof request.callerSessionId === 'string' && request.callerSessionId === sessionId) {
       throw new BinError('workspace-bin/caller-session', 'refusing to move the session this operation is running in', { sessionId })
+    }
+    if (isRunning(sessionId)) {
+      throw new BinError('workspace-bin/session-running', `session ${sessionId} is running; stop it before moving`, { sessionId })
     }
     const service = persistence()
     if (service === undefined) {
