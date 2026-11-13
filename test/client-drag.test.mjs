@@ -172,8 +172,9 @@ test('dragstart 记住来源；跨组 dragover 才接管并高亮；drop 调 rel
   listeners.get('dragover')(event.track('dragover', targetSessionRow))
   assert.equal(event.calls.at(-1).defaultPrevented, true)
   assert.equal(event.calls.at(-1).stopped, true)
-  assert.equal(target.classList.contains('wsbin-drop-target'), true)
+  assert.equal(target.classList.contains('wsbin-drop-target'), false, '会话行上用插入线，不再叠虚线框')
   assert.equal(source.classList.contains('wsbin-drop-target'), false)
+  assert.equal(targetSessionRow.classList.contains('wsbin-drop-after'), true, '落在目标会话行上要有插入线')
 
   const requests = []
   globalThis.fetch = async (url, init) => {
@@ -183,6 +184,7 @@ test('dragstart 记住来源；跨组 dragover 才接管并高亮；drop 调 rel
   listeners.get('drop')(event.track('drop', targetSessionRow))
   assert.equal(event.calls.at(-1).defaultPrevented, true)
   assert.equal(target.classList.contains('wsbin-drop-target'), false, '投放后清除高亮')
+  assert.equal(targetSessionRow.classList.contains('wsbin-drop-after'), false, '投放后清除插入线')
   await new Promise((settle) => setTimeout(settle, 0))
   assert.equal(requests.length, 1)
   assert.equal(requests[0].body.endpoint, 'relocate')
@@ -203,6 +205,22 @@ test('跨组 dragover 会清掉官方残留的蓝色插入线', async () => {
   listeners.get('dragstart')(events().track('dragstart', source.children[1]))
   listeners.get('dragover')(events().track('dragover', target.children[1]))
   assert.equal(nativeRow.classList.contains('JoiKIa_dropAfter'), false, '官方残留线要被清掉')
+})
+
+test('落在目标工作区目录（标题行）上不画插入线', async () => {
+  const { exported, listeners } = await loadClient()
+  exported.apply(fakeCtx())
+  const tree = makeNode()
+  const source = tree.append(makeGroup('ws-1', ['session-1']))
+  const target = tree.append(makeGroup('ws-2', ['session-2']))
+  const targetWorkspaceRow = target.children[0]
+  const targetSessionRow = target.children[1]
+  const event = events()
+  listeners.get('dragstart')(event.track('dragstart', source.children[1]))
+  listeners.get('dragover')(event.track('dragover', targetWorkspaceRow))
+  assert.equal(target.classList.contains('wsbin-drop-target'), true, '分组仍然高亮')
+  assert.equal(targetSessionRow.classList.contains('wsbin-drop-after'), false, '标题行上不画线')
+  assert.equal(targetSessionRow.classList.contains('wsbin-drop-before'), false)
 })
 
 test('落在整棵列表上不接管', async () => {

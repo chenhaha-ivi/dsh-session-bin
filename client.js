@@ -249,6 +249,18 @@ window.__ModuleLoader__.load({
   padding-top: 12px; border-top: .5px solid var(--dsw-alias-border-l1, rgba(127,127,127,.18)); }
 .wsbin-drop-target { outline: 2px dashed var(--dsw-alias-state-info-primary, #4c9aff); outline-offset: -2px;
   border-radius: var(--dsw-radius-md, 8px); background: var(--dsw-alias-interactive-bg-hover, rgba(127,127,127,.08)); }
+/* 跨工作区拖到目标会话行时，复刻官方同款蓝色插入线；拖到工作区目录（标题行）上不画。 */
+.wsbin-drop-before, .wsbin-drop-after { position: relative; }
+.wsbin-drop-before::before, .wsbin-drop-after::after {
+  content: ""; z-index: 1; pointer-events: none; position: absolute; height: 12px;
+  left: calc(-1 * var(--dsh-sidebar-paint-inset, 0px)); right: calc(4px - var(--dsh-sidebar-paint-inset, 0px));
+  background:
+    linear-gradient(55deg, transparent calc(50% - 1px), var(--dsw-alias-state-business-primary, #4c9aff) calc(50% - 1px) calc(50% + 1px), transparent calc(50% + 1px)) 0 0 / 5px 7px no-repeat,
+    linear-gradient(125deg, transparent calc(50% - 1px), var(--dsw-alias-state-business-primary, #4c9aff) calc(50% - 1px) calc(50% + 1px), transparent calc(50% + 1px)) 0 5px / 5px 7px no-repeat,
+    linear-gradient(var(--dsw-alias-state-business-primary, #4c9aff) 0 0) 4px 5px / calc(100% - 4px) 2px no-repeat;
+}
+.wsbin-drop-before::before { top: -7px; }
+.wsbin-drop-after::after { bottom: -7px; }
 .wsbin-drop-after::after { bottom: -7px; }
 .wsbin-toast { pointer-events: auto; position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%); z-index: 1000;
   max-width: min(560px, calc(100vw - 48px)); padding: 10px 16px; border-radius: 10px;
@@ -485,11 +497,26 @@ window.__ModuleLoader__.load({
       if (typeof document === 'undefined' || typeof document.addEventListener !== 'function') return () => {}
       let dragging = null
       let highlighted = null
+      let lineAnchor = null
       const t = (key) => ctx.locale.bind(NS)(key)
 
       const clearHighlight = () => {
         if (highlighted !== null && highlighted.classList !== undefined) highlighted.classList.remove('wsbin-drop-target')
         highlighted = null
+      }
+      const clearLine = () => {
+        if (lineAnchor !== null && lineAnchor.classList !== undefined) {
+          lineAnchor.classList.remove('wsbin-drop-before')
+          lineAnchor.classList.remove('wsbin-drop-after')
+        }
+        lineAnchor = null
+      }
+      const setLine = (node, side) => {
+        if (lineAnchor === node && node.classList.contains(`wsbin-drop-${side}`)) return
+        clearLine()
+        if (node?.classList === undefined) return
+        node.classList.add(`wsbin-drop-${side}`)
+        lineAnchor = node
       }
       /**
        * 清掉官方残留的蓝色插入线：官方只在自己的分组里画 marker，指针移出分组后
@@ -508,6 +535,7 @@ window.__ModuleLoader__.load({
       const reset = () => {
         dragging = null
         clearHighlight()
+        clearLine()
       }
       const setHighlight = (node) => {
         if (highlighted === node) return
@@ -536,6 +564,7 @@ window.__ModuleLoader__.load({
         const group = workspaceGroupOf(event.target)
         if (group === null || group.workspaceId === dragging.sourceWorkspaceId) {
           clearHighlight()
+          clearLine()
           // 指针离开所有分组时，官方那条线也该消失；自己分组内保留（官方组内排序要用）。
           if (group === null) clearNativeMarker()
           return
@@ -543,9 +572,25 @@ window.__ModuleLoader__.load({
         event.preventDefault()
         event.stopPropagation()
         if (event.dataTransfer !== null && event.dataTransfer !== undefined) event.dataTransfer.dropEffect = 'move'
-        setHighlight(group.node)
-        // 跨工作区只保留分组虚线高亮：蓝条是官方「组内排序」的语义，别在跨组时出现。
         clearNativeMarker()
+        // 两种提示互斥：落在会话行上画插入线；落在工作区目录（标题行/空白）上只画虚线分组框。
+        const targetNode = event.target
+        let row = typeof targetNode?.closest === 'function' ? targetNode.closest('[data-row-key^="session:"]') : null
+        if (row === null && typeof targetNode?.getAttribute === 'function'
+          && (targetNode.getAttribute('data-row-key') ?? '').startsWith('session:')) row = targetNode
+        const ownsRow = row !== null && (typeof group.node.contains !== 'function' || group.node.contains(row))
+        if (ownsRow) {
+          clearHighlight()
+          let side = 'after'
+          if (typeof row.getBoundingClientRect === 'function') {
+            const rect = row.getBoundingClientRect()
+            side = event.clientY < rect.top + rect.height / 2 ? 'before' : 'after'
+          }
+          setLine(row, side)
+        } else {
+          setHighlight(group.node)
+          clearLine()
+        }
       }
 
       const onDrop = (event) => {
@@ -566,7 +611,10 @@ window.__ModuleLoader__.load({
       const onDragLeave = (event) => {
         if (highlighted === null) return
         const related = event.relatedTarget
-        if (related === null || related === undefined || (typeof highlighted.contains === 'function' && !highlighted.contains(related))) clearHighlight()
+        if (related === null || related === undefined || (typeof highlighted.contains === 'function' && !highlighted.contains(related))) {
+          clearHighlight()
+          clearLine()
+        }
       }
 
       document.addEventListener('dragstart', onDragStart, true)

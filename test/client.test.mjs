@@ -151,7 +151,7 @@ test('拖拽高亮 / toast / 确认条的关键样式还在（防重设计误删
   const { ctx } = fakeClientCtx()
   exported.apply(ctx)
   const css = styles.map((element) => element.textContent).join('\n')
-  for (const selector of ['.wsbin-drop-target', '.wsbin-toast', '.wsbin-toast-error', '.wsbin-confirm']) {
+  for (const selector of ['.wsbin-drop-target', '.wsbin-drop-before', '.wsbin-drop-after', '.wsbin-toast', '.wsbin-toast-error', '.wsbin-confirm']) {
     assert.equal(css.includes(selector), true, `missing ${selector}`)
   }
 })
