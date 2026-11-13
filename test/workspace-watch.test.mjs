@@ -66,7 +66,7 @@ test('每次搬移都写一份可读日志', async () => {
     await world.watcher.idle()
     const log = await readFile(join(world.dshHome, 'session-bin', 'os-trash.log'), 'utf8')
     assert.equal(log.includes('moved'), true)
-    assert.equal(log.includes(world.workspace), true)
+    assert.equal(log.includes(JSON.stringify(world.workspace)), true)
   } finally {
     await dispose(world.home)
   }

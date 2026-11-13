@@ -473,7 +473,7 @@ test('启动恢复：已搬进回收站但登记未删 -> 补完删除', async (
       sessions: plan.sessions.map((session) => ({ id: session.id, title: session.title, archived: false, pinned: false })),
     })
     const destination = join(world.bin.sessionsDir(entry.id), plan.projectKey)
-    await mkdir(destination, { recursive: true })
+    // 不要预建 destination：Windows 不允许 rename 目录到已存在目录（POSIX 允许）。
     const { rename } = await import('node:fs/promises')
     await rename(world.projectDir, destination)
 
@@ -524,7 +524,7 @@ test('启动恢复：文件已进 bin 且登记已删 -> 只补 done', async () 
       sessions: plan.sessions.map((session) => ({ id: session.id, title: session.title, archived: false, pinned: false })),
     })
     const destination = join(world.bin.sessionsDir(entry.id), plan.projectKey)
-    await mkdir(destination, { recursive: true })
+    // 不要预建 destination：Windows 不允许 rename 目录到已存在目录（POSIX 允许）。
     const { rename } = await import('node:fs/promises')
     await rename(world.projectDir, destination)
     await world.registry.delete('ws-1')

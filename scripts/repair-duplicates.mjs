@@ -16,7 +16,8 @@
  */
 import { copyFile, readdir, readFile, realpath, writeFile } from 'node:fs/promises'
 import { homedir } from 'node:os'
-import { join } from 'node:path'
+import { join, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { zstdDecompressSync } from 'node:zlib'
 import { projectKey } from '../src/host/paths.js'
 
@@ -117,6 +118,7 @@ async function ownerOf(sessionId, workspaces) {
   return undefined
 }
 
+async function main() {
 const state = JSON.parse(await readFile(stateFile, 'utf8'))
 const workspaces = state.tables?.workspaces ?? {}
 const ownerBySession = new Map()
@@ -156,3 +158,8 @@ for (const repair of repairs) {
 await writeFile(stateFile, JSON.stringify(state, null, 2) + '\n')
 const after = JSON.parse(await readFile(stateFile, 'utf8'))
 console.log(`\n已写回：${backup} 是备份；剩余重复 ${findDuplicates(after).size} 个。`)
+}
+
+if (process.argv[1] !== undefined && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  await main()
+}
