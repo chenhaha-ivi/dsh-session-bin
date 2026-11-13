@@ -262,7 +262,8 @@ window.__ModuleLoader__.load({
 .wsbin-drop-before::before { top: -7px; }
 .wsbin-drop-after::after { bottom: -7px; }
 .wsbin-drop-after::after { bottom: -7px; }
-.wsbin-toast { pointer-events: auto; position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%); z-index: 1000;
+.wsbin-toast { pointer-events: auto; position: fixed; left: 50%; transform: translateX(-50%); z-index: 1000;
+  top: max(16px, calc(var(--dsh-frame-top-clearance, 0px) + 12px));
   max-width: min(560px, calc(100vw - 48px)); padding: 10px 16px; border-radius: 10px;
   border: .5px solid var(--dsw-alias-border-l1, rgba(127,127,127,.24));
   background: var(--dsw-alias-bg-overlay, #26262a); color: var(--dsw-alias-label-primary, #f5f5f5);
