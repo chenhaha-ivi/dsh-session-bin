@@ -132,33 +132,6 @@ test('页脚按钮与回收站面板能渲染（空面板）', async () => {
   exported.__stores.requestStore.set(null)
 })
 
-test('运行中的会话菜单项禁用，点击不触发', async () => {
-  const exported = await loadClient()
-  const { ctx } = fakeClientCtx()
-  const definitions = []
-  ctx.slots.register = (definition, component) => {
-    definitions.push({ definition, component })
-    return () => {}
-  }
-  exported.apply(ctx)
-  const slot = definitions.find((entry) => entry.definition.name === 'sidebar.workspaces.session.menu.item')
-  let requested = null
-  const tree = render(slot.component({
-    sessionId: 'session-1',
-    displayTitle: '演示会话',
-    useMenuOpenState: () => [false, () => {}],
-    useSessionStatus: () => true,
-    requestDelete: () => { requested = 'called' },
-    t: (key) => key,
-  }))
-  const button = findByClass(tree, 'wsbin-menu-item')[0]
-  assert.equal(button.props.disabled, true)
-  assert.equal(button.props['aria-disabled'], 'true')
-  assert.equal(button.props.title, 'menu.deleteSessionRunning')
-  button.props.onClick()
-  assert.equal(requested, null, '禁用时点击无动作')
-})
-
 test('会话菜单行能渲染并触发 requestDelete', async () => {
   const exported = await loadClient()
   const { ctx, calls } = fakeClientCtx()

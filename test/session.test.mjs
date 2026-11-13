@@ -36,14 +36,15 @@ test('surveySession 报告会话、归属与目录', async () => {
   }
 })
 
-test('正在跑的会话拒绝回收，survey 与 execute 都不碰文件', async () => {
+test('正在跑的会话允许回收：plan.running=true，先停后删', async () => {
   const world = await makeWorld({ sessionIds: ['session-1'], live: ['session-1'], running: ['session-1'] })
   try {
-    await assert.rejects(world.ops.survey({ sessionId: 'session-1' }), binError('workspace-bin/session-running'))
-    await assert.rejects(world.ops.execute({ kind: 'session', session: { id: 'session-1' } }), binError('workspace-bin/session-running'))
-    assert.deepEqual(world.registry.get('ws-1').sessionIds, ['session-1'])
-    assert.equal(await exists(join(world.projectDir, 'session-1')), true)
-    assert.equal((await world.bin.scan()).entries.length, 0)
+    const plan = await world.ops.survey({ sessionId: 'session-1' })
+    assert.equal(plan.running, true)
+    const report = await world.ops.execute(plan)
+    assert.equal(report.entryId.length > 0, true)
+    assert.equal(await exists(join(world.projectDir, 'session-1')), false)
+    assert.deepEqual(world.registry.get('ws-1').sessionIds, [])
   } finally {
     await dispose(world.home)
   }

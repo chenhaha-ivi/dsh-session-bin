@@ -39,17 +39,15 @@ async function stagingEntries(world) {
   }
 }
 
-test('正在跑的会话拒绝搬移，源目录与归属不动', async () => {
+test('正在跑的会话允许搬移：先停再搬，回执 stoppedRunning=true', async () => {
   const world = await makeWorld({ sessionIds: ['session-1'], live: ['session-1'], running: ['session-1'] })
   try {
     const target = await addTarget(world)
-    await assert.rejects(
-      world.ops.relocate({ sessionId: 'session-1', targetWorkspaceId: target.workspace.id }),
-      binError('workspace-bin/session-running'),
-    )
-    assert.equal(await exists(join(world.projectDir, 'session-1')), true)
-    assert.deepEqual(world.registry.get('ws-1').sessionIds, ['session-1'])
-    assert.deepEqual(world.registry.get(target.workspace.id).sessionIds, [])
+    const report = await world.ops.relocate({ sessionId: 'session-1', targetWorkspaceId: target.workspace.id })
+    assert.equal(report.applied, 'moved')
+    assert.equal(report.stoppedRunning, true)
+    assert.equal(await exists(join(world.projectDir, 'session-1')), false)
+    assert.deepEqual(world.registry.get(target.workspace.id).sessionIds, ['session-1'])
   } finally {
     await dispose(world.home)
   }

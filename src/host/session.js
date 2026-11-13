@@ -71,9 +71,7 @@ export function createSessionOps(deps) {
     if (callerSessionId === sessionId) {
       throw new BinError('workspace-bin/caller-session', 'refusing to delete the session this operation is running in', { callerSessionId })
     }
-    if (isRunning(sessionId)) {
-      throw new BinError('workspace-bin/session-running', `session ${sessionId} is running; stop it before recycling`, { sessionId })
-    }
+    const running = isRunning(sessionId)
 
     let header
     try {
@@ -130,6 +128,7 @@ export function createSessionOps(deps) {
       sessionDir,
       size: await directorySize(sessionDir),
       sessionCount: 1,
+      running,
     }
   }
 
@@ -138,10 +137,7 @@ export function createSessionOps(deps) {
    * @param {object} plan `surveySession` 的返回值。
    */
   async function executeSession(plan) {
-    const session = plan?.session
-    if (session?.id !== undefined && isRunning(session.id)) {
-      throw new BinError('workspace-bin/session-running', `session ${session.id} is running; stop it before recycling`, { sessionId: session.id })
-    }
+    const session = plan.session
     const warnings = []
     const quiesced = await quiesce(session.id)
     warnings.push(...quiesced.errors)

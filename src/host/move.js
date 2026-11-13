@@ -211,9 +211,7 @@ export function createMoveOps(deps) {
     if (typeof request.callerSessionId === 'string' && request.callerSessionId === sessionId) {
       throw new BinError('workspace-bin/caller-session', 'refusing to move the session this operation is running in', { sessionId })
     }
-    if (isRunning(sessionId)) {
-      throw new BinError('workspace-bin/session-running', `session ${sessionId} is running; stop it before moving`, { sessionId })
-    }
+    const wasRunning = isRunning(sessionId)
     const service = persistence()
     if (service === undefined) {
       throw new BinError('workspace-bin/no-persistence', 'the session persistence service is unavailable')
@@ -246,7 +244,7 @@ export function createMoveOps(deps) {
           warnings.push(`attach: ${reason(error)}`)
         }
       }
-      return { sessionId, applied: 'already-there', fromCwd, toCwd, targetWorkspaceId: target.id, warnings }
+      return { sessionId, applied: 'already-there', fromCwd, toCwd, targetWorkspaceId: target.id, stoppedRunning: false, warnings }
     }
 
     // 大日志护栏：先看 sizeBytes，再看要不要整段读。
@@ -412,6 +410,7 @@ export function createMoveOps(deps) {
       lastSeq,
       refreshed,
       registry: { applied: registryApplied, reason: registryReason },
+      stoppedRunning: wasRunning,
       warnings,
     }
   }
