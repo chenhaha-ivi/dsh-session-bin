@@ -539,6 +539,7 @@ window.__ModuleLoader__.load({
         dragging = {
           sessionId,
           sourceWorkspaceId: workspaceGroupOf(event.target)?.workspaceId ?? null,
+          insertion: null,
         }
         try {
           event.dataTransfer?.setData('text/plain', sessionId)
@@ -552,6 +553,7 @@ window.__ModuleLoader__.load({
         if (dragging === null) return
         const group = workspaceGroupOf(event.target)
         if (group === null || group.workspaceId === dragging.sourceWorkspaceId) {
+          dragging.insertion = null
           clearHighlight()
           clearLine()
           // 指针离开所有分组时，官方那条线也该消失；自己分组内保留（官方组内排序要用）。
@@ -576,9 +578,16 @@ window.__ModuleLoader__.load({
             side = event.clientY < rect.top + rect.height / 2 ? 'before' : 'after'
           }
           setLine(row, side)
+          const key = typeof row.getAttribute === 'function' ? row.getAttribute('data-row-key') : null
+          dragging.insertion = {
+            workspaceId: group.workspaceId,
+            anchorId: typeof key === 'string' && key.startsWith('session:') ? key.slice('session:'.length) : null,
+            side,
+          }
         } else {
           setHighlight(group.node)
           clearLine()
+          dragging.insertion = { workspaceId: group.workspaceId, anchorId: null, side: 'after' }
         }
       }
 
@@ -591,10 +600,10 @@ window.__ModuleLoader__.load({
         }
         event.preventDefault()
         event.stopPropagation()
-        const { sessionId } = dragging
+        const { sessionId, insertion } = dragging
         const targetWorkspaceId = group.workspaceId
         reset()
-        void moveSession(ctx, t, sessionId, targetWorkspaceId)
+        void moveSession(ctx, t, sessionId, targetWorkspaceId, insertion)
       }
 
       const onDragLeave = (event) => {
@@ -621,10 +630,65 @@ window.__ModuleLoader__.load({
       }
     }
 
+    /**
+     * 把会话放到落点对应的位置。
+     *
+     * Host 的 relocate 只负责「归属 + cwd」，成员顺序是 prepend 到目标工作区；
+     * 界面上的排序是浏览器本地的 manual order。这里调官方 view store 的
+     * `setSessionOrder`，按拖拽时的 anchor 把 id 插进去，落点才和蓝线一致。
+     * 拿不到官方服务就安静跳过（顺序退化为官方默认）。
+     *
+     * @param {any} ctx 客户端上下文。
+     * @param {string} sessionId 被移动的会话。
+     * @param {{workspaceId: string, anchorId: string | null, side: 'before' | 'after'} | null} insertion
+     */
+    function applyInsertion(ctx, sessionId, insertion) {
+      if (insertion === null || insertion === undefined) return
+      const workspaceId = insertion.workspaceId
+      if (typeof workspaceId !== 'string' || workspaceId === '') return
+      try {
+        const ui = typeof ctx?.get === 'function' ? ctx.get('uiWorkspace') : undefined
+        const actions = ui?.view
+        if (actions === undefined || actions === null || typeof actions.setSessionOrder !== 'function') return
+        let groupNode = null
+        if (typeof document.querySelectorAll === 'function') {
+          const rowKey = `workspace:${workspaceId}`
+          const row = [...document.querySelectorAll('[data-row-key^="workspace:"]')]
+            .find((element) => element.getAttribute('data-row-key') === rowKey)
+          groupNode = row !== undefined ? workspaceGroupOf(row)?.node ?? null : null
+        }
+        const domIds = groupNode !== null && typeof groupNode.querySelectorAll === 'function'
+          ? [...groupNode.querySelectorAll('[data-row-key^="session:"]')]
+              .map((element) => String(element.getAttribute('data-row-key')))
+              .filter((key) => key.startsWith('session:'))
+              .map((key) => key.slice('session:'.length))
+          : []
+        let hostIds = []
+        try {
+          const snapshot = ctx.get?.('workspaces')?.list?.getSnapshot?.()
+          const item = snapshot?.items?.find((entry) => entry.workspaceId === workspaceId)
+          if (Array.isArray(item?.sessionIds)) hostIds = item.sessionIds.map(String)
+        } catch {
+          hostIds = []
+        }
+        const order = [...new Set([...domIds, ...hostIds])].filter((id) => id !== sessionId)
+        let index = order.length
+        if (insertion.anchorId !== null && insertion.anchorId !== undefined) {
+          const anchorIndex = order.indexOf(String(insertion.anchorId))
+          if (anchorIndex >= 0) index = anchorIndex + (insertion.side === 'after' ? 1 : 0)
+        }
+        order.splice(index, 0, sessionId)
+        actions.setSessionOrder(workspaceId, order, {})
+      } catch {
+        // 顺序只是显示；失败不影响已经完成的搬运。
+      }
+    }
+
     /** 调一次 Host 的 relocate，并把结果变成提示。 */
-    async function moveSession(ctx, t, sessionId, targetWorkspaceId) {
+    async function moveSession(ctx, t, sessionId, targetWorkspaceId, insertion) {
       const result = await callHost('relocate', { sessionId, targetWorkspaceId })
       if (result.ok === true) {
+        applyInsertion(ctx, sessionId, insertion)
         bump()
         refreshSessions()
       } else {

@@ -223,6 +223,32 @@ test('落在目标工作区目录（标题行）上不画插入线', async () =>
   assert.equal(targetSessionRow.classList.contains('wsbin-drop-before'), false)
 })
 
+test('叉到目标会话行后按落点写 manual order', async () => {
+  const { exported, listeners } = await loadClient()
+  const calls = []
+  const ctx = fakeCtx()
+  ctx.get = (name) => {
+    if (name === 'uiWorkspace') return { view: { setSessionOrder: (key, order) => calls.push([key, order]) } }
+    if (name === 'workspaces') return { list: { getSnapshot: () => ({ items: [{ workspaceId: 'ws-2', sessionIds: ['session-2', 'session-3'] }] }) } }
+    return undefined
+  }
+  exported.apply(ctx)
+  const tree = makeNode()
+  const source = tree.append(makeGroup('ws-1', ['session-1']))
+  const target = tree.append(makeGroup('ws-2', ['session-2', 'session-3']))
+  globalThis.document.querySelectorAll = (selector) => (selector.includes('workspace:') ? [target.children[0]] : [])
+  globalThis.fetch = async () => ({ ok: true, json: async () => ({ ok: true, value: { applied: 'moved' } }) })
+
+  const event = events()
+  listeners.get('dragstart')(event.track('dragstart', source.children[1]))
+  listeners.get('dragover')(event.track('dragover', target.children[1])) // session-2, after
+  listeners.get('drop')(event.track('drop', target.children[1]))
+  await new Promise((settle) => setTimeout(settle, 0))
+  assert.equal(calls.length, 1)
+  assert.equal(calls[0][0], 'ws-2')
+  assert.deepEqual(calls[0][1], ['session-2', 'session-1', 'session-3'])
+})
+
 test('落在整棵列表上不接管', async () => {
   const { exported, listeners } = await loadClient()
   exported.apply(fakeCtx())
