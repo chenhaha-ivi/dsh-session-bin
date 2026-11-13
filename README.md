@@ -22,11 +22,7 @@ DSH 的会话回收站：删掉的会话先放进来，能恢复、也能彻底�
 
 ## 安装
 
-> ⚠️ 0.1.0 已提交 npm **staged publishing**，正在等待维护者 2FA 审批。
-> 在 `npm view dsh-session-bin@0.1.0` 返回版本号之前，请使用下面的本地链接方式安装；
-> 现在执行 `dsh plugin add dsh-session-bin` 只会拿到 `0.0.0-stage` 占位包。
-
-从 npm 装（0.1.0 审批通过后，推荐）：
+从 npm 装（推荐）：
 
 ```bash
 dsh plugin --profile desktop add dsh-session-bin
@@ -47,8 +43,8 @@ pnpm add link:<仓库根目录>      # 例如 ~/Documents/dsh-session-bin
 回收站目录不会自动清理（手动删就是真删字节）。
 完整步骤、逐项验收和回滚方式见 [INSTALL.md](INSTALL.md)。
 
-> 0.1.0 的 npm 产物已打包、校验（`dist/dsh-session-bin-0.1.0.tgz`，校验值见 `CHECKSUMS`）。
-> 发布已提交到 npm staged publishing，审批通过后即可从 npm 安装；审批前请用上面的本地链接方式。
+> 0.1.0 已发布到 npm；`dist/dsh-session-bin-0.1.0.tgz` 的校验值与 npm `dist.shasum` 一致（见 `CHECKSUMS`）。
+> 如果 npm 页面显示旧内容，以仓库 `main` 为准。
 
 > **从旧包 0.4.x 升级**：仓库目录、profile 依赖和 `dsh.profile.bundles` 都换成新包名
 > `dsh-session-bin`（版本号从 0.1.0 重新起），重启即可；回收站数据与暂存区会在首次启动时自动迁移。
