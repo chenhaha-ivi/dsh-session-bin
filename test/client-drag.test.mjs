@@ -249,6 +249,32 @@ test('叉到目标会话行后按落点写 manual order', async () => {
   assert.deepEqual(calls[0][1], ['session-2', 'session-1', 'session-3'])
 })
 
+test('拖到页脚回收站：高亮，drop 打开回收确认而不是搬运', async () => {
+  const { exported, listeners } = await loadClient()
+  exported.apply(fakeCtx())
+  const tree = makeNode()
+  const source = tree.append(makeGroup('ws-1', ['session-1']))
+  const trash = makeNode()
+  trash.classList.add('wsbin-footer-action')
+  tree.append(trash)
+  const event = events()
+
+  listeners.get('dragstart')(event.track('dragstart', source.children[1]))
+  const over = event.track('dragover', trash)
+  listeners.get('dragover')(over)
+  assert.equal(over.defaultPrevented, true)
+  assert.equal(trash.classList.contains('wsbin-trash-hover'), true)
+
+  let fetched = 0
+  globalThis.fetch = async () => { fetched += 1; return { ok: true, json: async () => ({ ok: true, value: {} }) } }
+  const drop = event.track('drop', trash)
+  listeners.get('drop')(drop)
+  assert.equal(drop.defaultPrevented, true)
+  assert.equal(fetched, 0, '拖到回收站不应该发 relocate')
+  assert.deepEqual(exported.__stores.requestStore.get(), { kind: 'session', sessionId: 'session-1', displayTitle: '' })
+  assert.equal(trash.classList.contains('wsbin-trash-hover'), false, 'drop 后清除高亮')
+})
+
 test('落在整棵列表上不接管', async () => {
   const { exported, listeners } = await loadClient()
   exported.apply(fakeCtx())

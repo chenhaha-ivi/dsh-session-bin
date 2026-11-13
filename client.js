@@ -183,6 +183,8 @@ window.__ModuleLoader__.load({
 .wsbin-btn:hover:not(:disabled) { background: var(--dsw-alias-interactive-bg-hover, rgba(127,127,127,.14)); }
 /* 页脚入口跟着侧栏走：撑满可用宽度、左对齐，别做成固定宽的小胶囊。 */
 .wsbin-footer-action { width: 100%; justify-content: flex-start; text-align: left; margin: 8px 0; }
+.wsbin-footer-action.wsbin-trash-hover { background: var(--dsw-alias-interactive-bg-hover-danger, rgba(229,72,77,.14)); box-shadow: inset 0 0 0 1px var(--dsw-alias-state-error-primary, #e5484d); }
+.wsbin-footer-action.wsbin-trash-hover .wsbin-label, .wsbin-footer-action.wsbin-trash-hover .wsbin-icon { color: var(--dsw-alias-state-error-primary, #e5484d); }
 .wsbin-btn:disabled { opacity: .4; cursor: not-allowed; }
 .wsbin-btn-danger { background: var(--dsw-alias-state-error-primary, #e5484d); color: #fff; }
 .wsbin-btn-danger:hover:not(:disabled) { filter: brightness(1.07); background: var(--dsw-alias-state-error-primary, #e5484d); }
@@ -487,6 +489,7 @@ window.__ModuleLoader__.load({
       let dragging = null
       let highlighted = null
       let lineAnchor = null
+      let trashHover = null
       const t = (key) => ctx.locale.bind(NS)(key)
 
       const clearHighlight = () => {
@@ -499,6 +502,25 @@ window.__ModuleLoader__.load({
           lineAnchor.classList.remove('wsbin-drop-after')
         }
         lineAnchor = null
+      }
+      /** 事件目标是不是页脚的「回收站」入口。 */
+      const trashTargetOf = (node) => {
+        let current = node
+        for (let guard = 0; current !== null && current !== undefined && guard < 6; guard += 1) {
+          if (current.classList?.contains?.('wsbin-footer-action') === true) return current
+          current = current.parentNode
+        }
+        return null
+      }
+      const clearTrash = () => {
+        if (trashHover !== null && trashHover.classList !== undefined) trashHover.classList.remove('wsbin-trash-hover')
+        trashHover = null
+      }
+      const setTrash = (node) => {
+        if (trashHover === node) return
+        clearTrash()
+        if (node?.classList !== undefined) node.classList.add('wsbin-trash-hover')
+        trashHover = node
       }
       const setLine = (node, side) => {
         if (lineAnchor === node && node.classList.contains(`wsbin-drop-${side}`)) return
@@ -525,6 +547,7 @@ window.__ModuleLoader__.load({
         dragging = null
         clearHighlight()
         clearLine()
+        clearTrash()
       }
       const setHighlight = (node) => {
         if (highlighted === node) return
@@ -551,6 +574,19 @@ window.__ModuleLoader__.load({
 
       const onDragOver = (event) => {
         if (dragging === null) return
+        const trash = trashTargetOf(event.target)
+        if (trash !== null) {
+          event.preventDefault()
+          event.stopPropagation()
+          if (event.dataTransfer !== null && event.dataTransfer !== undefined) event.dataTransfer.dropEffect = 'move'
+          dragging.insertion = null
+          clearHighlight()
+          clearLine()
+          clearNativeMarker()
+          setTrash(trash)
+          return
+        }
+        clearTrash()
         const group = workspaceGroupOf(event.target)
         if (group === null || group.workspaceId === dragging.sourceWorkspaceId) {
           dragging.insertion = null
@@ -593,6 +629,16 @@ window.__ModuleLoader__.load({
 
       const onDrop = (event) => {
         if (dragging === null) return
+        const trash = trashTargetOf(event.target)
+        if (trash !== null) {
+          event.preventDefault()
+          event.stopPropagation()
+          const { sessionId } = dragging
+          reset()
+          // 拖到回收站 = 走和菜单「回收会话」完全相同的确认流程。
+          requestStore.set({ kind: 'session', sessionId, displayTitle: '' })
+          return
+        }
         const group = workspaceGroupOf(event.target)
         if (group === null || group.workspaceId === dragging.sourceWorkspaceId) {
           reset()
@@ -607,6 +653,10 @@ window.__ModuleLoader__.load({
       }
 
       const onDragLeave = (event) => {
+        if (trashHover !== null) {
+          const related = event.relatedTarget
+          if (related === null || related === undefined || (typeof trashHover.contains === 'function' && !trashHover.contains(related))) clearTrash()
+        }
         if (highlighted === null) return
         const related = event.relatedTarget
         if (related === null || related === undefined || (typeof highlighted.contains === 'function' && !highlighted.contains(related))) {
