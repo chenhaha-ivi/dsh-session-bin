@@ -146,6 +146,16 @@ test('删掉的会话正开着时收掉主视图', async () => {
   assert.equal(cleared, 2, 'selection 为空时用主引用兜底')
 })
 
+test('拖拽高亮 / toast / 确认条的关键样式还在（防重设计误删）', async () => {
+  const { exported, styles } = await loadClient()
+  const { ctx } = fakeClientCtx()
+  exported.apply(ctx)
+  const css = styles.map((element) => element.textContent).join('\n')
+  for (const selector of ['.wsbin-drop-target', '.wsbin-toast', '.wsbin-toast-error', '.wsbin-confirm']) {
+    assert.equal(css.includes(selector), true, `missing ${selector}`)
+  }
+})
+
 test('formatBytes 边界', async () => {
   const { exported } = await loadClient()
   assert.equal(exported.formatBytes(0), '0 B')

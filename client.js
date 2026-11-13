@@ -247,6 +247,17 @@ window.__ModuleLoader__.load({
 .wsbin-empty-icon { opacity: .45; }
 .wsbin-footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 2px;
   padding-top: 12px; border-top: .5px solid var(--dsw-alias-border-l1, rgba(127,127,127,.18)); }
+.wsbin-drop-target { outline: 2px dashed var(--dsw-alias-state-info-primary, #4c9aff); outline-offset: -2px;
+  border-radius: var(--dsw-radius-md, 8px); background: var(--dsw-alias-interactive-bg-hover, rgba(127,127,127,.08)); }
+.wsbin-toast { pointer-events: auto; position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%); z-index: 1000;
+  max-width: min(560px, calc(100vw - 48px)); padding: 10px 16px; border-radius: 10px;
+  border: .5px solid var(--dsw-alias-border-l1, rgba(127,127,127,.24));
+  background: var(--dsw-alias-bg-overlay, #26262a); color: var(--dsw-alias-label-primary, #f5f5f5);
+  box-shadow: var(--dsw-elevation-prominent, 0 8px 24px rgba(0,0,0,.3)); font-size: 13px; line-height: 20px; }
+.wsbin-toast-error { color: var(--dsw-alias-state-error-primary, #e5484d); }
+.wsbin-confirm { display: flex; flex-direction: column; gap: 10px; padding: 12px 14px; border-radius: 10px;
+  border: .5px solid var(--dsw-alias-state-error-primary, #e5484d);
+  background: var(--dsw-alias-state-error-primary-a08, rgba(229,72,77,.08)); }
 `
 
     /** 最小外部 store：一个值 + 同步通知。 */
