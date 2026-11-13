@@ -1,22 +1,22 @@
 <svg width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
   <g transform="translate(18 18) scale(0.94) translate(-18 -18)">
     <defs>
-      <linearGradient id="workspace-bin-body" x1="10.6" y1="15.4" x2="25.4" y2="29.6" gradientUnits="userSpaceOnUse">
+      <linearGradient id="session-bin-body" x1="10.6" y1="15.4" x2="25.4" y2="29.6" gradientUnits="userSpaceOnUse">
         <stop stop-color="#86B8F5"/>
         <stop offset="1" stop-color="#5269E1"/>
       </linearGradient>
-      <linearGradient id="workspace-bin-lid" x1="8.2" y1="6.2" x2="27.8" y2="12.2" gradientUnits="userSpaceOnUse">
+      <linearGradient id="session-bin-lid" x1="8.2" y1="6.2" x2="27.8" y2="12.2" gradientUnits="userSpaceOnUse">
         <stop stop-color="#B6D5FB"/>
         <stop offset="1" stop-color="#7C97EC"/>
       </linearGradient>
-      <mask id="workspace-bin-ribs" maskUnits="userSpaceOnUse" x="8" y="14" width="20" height="17">
+      <mask id="session-bin-ribs" maskUnits="userSpaceOnUse" x="8" y="14" width="20" height="17">
         <rect x="8" y="14" width="20" height="17" fill="#fff"/>
         <rect x="14.5" y="19.6" width="2" height="5.4" rx="1" fill="#000"/>
         <rect x="19.5" y="19.6" width="2" height="5.4" rx="1" fill="#000"/>
       </mask>
     </defs>
-    <path d="M10.6 15.4H25.4L24.1 27.6C24 28.8 23.2 29.6 21.9 29.6H14.1C12.8 29.6 12 28.8 11.9 27.6L10.6 15.4Z" fill="url(#workspace-bin-body)" mask="url(#workspace-bin-ribs)"/>
-    <rect x="14.6" y="6.2" width="6.8" height="3.4" rx="1.6" fill="url(#workspace-bin-lid)"/>
-    <rect x="8.2" y="9.2" width="19.6" height="3" rx="1.5" fill="url(#workspace-bin-lid)"/>
+    <path d="M10.6 15.4H25.4L24.1 27.6C24 28.8 23.2 29.6 21.9 29.6H14.1C12.8 29.6 12 28.8 11.9 27.6L10.6 15.4Z" fill="url(#session-bin-body)" mask="url(#session-bin-ribs)"/>
+    <rect x="14.6" y="6.2" width="6.8" height="3.4" rx="1.6" fill="url(#session-bin-lid)"/>
+    <rect x="8.2" y="9.2" width="19.6" height="3" rx="1.5" fill="url(#session-bin-lid)"/>
   </g>
 </svg>

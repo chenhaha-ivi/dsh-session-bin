@@ -1,5 +1,5 @@
 /**
- * `/api/workspace-bin` 的请求分发。
+ * `/api/session-bin` 的请求分发。
  *
  * 一个精确路由，五种端点，统一信封：
  *   请求 `{ endpoint, payload }`；成功 `{ ok: true, value }`；
@@ -7,7 +7,7 @@
  * 只有「请求体不是 JSON / 不是对象」回 400，其余业务失败都走 200 + 信封，
  * 客户端按 `code` 做事，不靠 HTTP 状态猜。
  *
- * @module dsh-workspace-bin/routes
+ * @module dsh-session-bin/routes
  */
 
 import { BinError } from './trash.js'
@@ -51,10 +51,10 @@ export function createRouteHandler(ops) {
     try {
       body = await request.json()
     } catch {
-      return json(fail('workspace-bin/bad-request', 'the request body is not JSON'), 400)
+      return json(fail('session-bin/bad-request', 'the request body is not JSON'), 400)
     }
     if (body === null || typeof body !== 'object' || Array.isArray(body)) {
-      return json(fail('workspace-bin/bad-request', 'the request body must be a JSON object'), 400)
+      return json(fail('session-bin/bad-request', 'the request body must be a JSON object'), 400)
     }
     const endpoint = typeof body.endpoint === 'string' ? body.endpoint : ''
     const payload = body.payload !== null && typeof body.payload === 'object' ? body.payload : {}
@@ -62,7 +62,7 @@ export function createRouteHandler(ops) {
       return json(await handle(ops, endpoint, payload))
     } catch (error) {
       if (error instanceof BinError) return json(fail(error.code, error.message, error.details))
-      return json(fail('workspace-bin/failed', reason(error)))
+      return json(fail('session-bin/failed', reason(error)))
     }
   }
 }
@@ -105,7 +105,7 @@ async function handle(ops, endpoint, payload) {
   }
   if (endpoint === 'restore') {
     const entryId = typeof payload.entryId === 'string' ? payload.entryId.trim() : ''
-    if (entryId === '') throw new BinError('workspace-bin/invalid-request', 'entryId is required')
+    if (entryId === '') throw new BinError('session-bin/invalid-request', 'entryId is required')
     return ok(await ops.restore(entryId))
   }
   if (endpoint === 'empty') {
@@ -114,5 +114,5 @@ async function handle(ops, endpoint, payload) {
       : undefined
     return ok(await ops.purge(entryIds))
   }
-  throw new BinError('workspace-bin/unknown-endpoint', `unknown endpoint ${JSON.stringify(endpoint)}`)
+  throw new BinError('session-bin/unknown-endpoint', `unknown endpoint ${JSON.stringify(endpoint)}`)
 }

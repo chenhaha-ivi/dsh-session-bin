@@ -172,9 +172,9 @@ test('dragstart 记住来源；跨组 dragover 才接管并高亮；drop 调 rel
   listeners.get('dragover')(event.track('dragover', targetSessionRow))
   assert.equal(event.calls.at(-1).defaultPrevented, true)
   assert.equal(event.calls.at(-1).stopped, true)
-  assert.equal(target.classList.contains('wsbin-drop-target'), false, '会话行上用插入线，不再叠虚线框')
-  assert.equal(source.classList.contains('wsbin-drop-target'), false)
-  assert.equal(targetSessionRow.classList.contains('wsbin-drop-after'), true, '落在目标会话行上要有插入线')
+  assert.equal(target.classList.contains('sbin-drop-target'), false, '会话行上用插入线，不再叠虚线框')
+  assert.equal(source.classList.contains('sbin-drop-target'), false)
+  assert.equal(targetSessionRow.classList.contains('sbin-drop-after'), true, '落在目标会话行上要有插入线')
 
   const requests = []
   globalThis.fetch = async (url, init) => {
@@ -183,8 +183,8 @@ test('dragstart 记住来源；跨组 dragover 才接管并高亮；drop 调 rel
   }
   listeners.get('drop')(event.track('drop', targetSessionRow))
   assert.equal(event.calls.at(-1).defaultPrevented, true)
-  assert.equal(target.classList.contains('wsbin-drop-target'), false, '投放后清除高亮')
-  assert.equal(targetSessionRow.classList.contains('wsbin-drop-after'), false, '投放后清除插入线')
+  assert.equal(target.classList.contains('sbin-drop-target'), false, '投放后清除高亮')
+  assert.equal(targetSessionRow.classList.contains('sbin-drop-after'), false, '投放后清除插入线')
   await new Promise((settle) => setTimeout(settle, 0))
   assert.equal(requests.length, 1)
   assert.equal(requests[0].body.endpoint, 'relocate')
@@ -218,9 +218,9 @@ test('落在目标工作区目录（标题行）上不画插入线', async () =>
   const event = events()
   listeners.get('dragstart')(event.track('dragstart', source.children[1]))
   listeners.get('dragover')(event.track('dragover', targetWorkspaceRow))
-  assert.equal(target.classList.contains('wsbin-drop-target'), true, '分组仍然高亮')
-  assert.equal(targetSessionRow.classList.contains('wsbin-drop-after'), false, '标题行上不画线')
-  assert.equal(targetSessionRow.classList.contains('wsbin-drop-before'), false)
+  assert.equal(target.classList.contains('sbin-drop-target'), true, '分组仍然高亮')
+  assert.equal(targetSessionRow.classList.contains('sbin-drop-after'), false, '标题行上不画线')
+  assert.equal(targetSessionRow.classList.contains('sbin-drop-before'), false)
 })
 
 test('叉到目标会话行后按落点写 manual order', async () => {
@@ -255,7 +255,7 @@ test('拖到页脚回收站：高亮，drop 打开回收确认而不是搬运', 
   const tree = makeNode()
   const source = tree.append(makeGroup('ws-1', ['session-1']))
   const trash = makeNode()
-  trash.classList.add('wsbin-footer-action')
+  trash.classList.add('sbin-footer-action')
   tree.append(trash)
   const event = events()
 
@@ -263,7 +263,7 @@ test('拖到页脚回收站：高亮，drop 打开回收确认而不是搬运', 
   const over = event.track('dragover', trash)
   listeners.get('dragover')(over)
   assert.equal(over.defaultPrevented, true)
-  assert.equal(trash.classList.contains('wsbin-trash-hover'), true)
+  assert.equal(trash.classList.contains('sbin-trash-hover'), true)
 
   let fetched = 0
   globalThis.fetch = async () => { fetched += 1; return { ok: true, json: async () => ({ ok: true, value: {} }) } }
@@ -272,7 +272,7 @@ test('拖到页脚回收站：高亮，drop 打开回收确认而不是搬运', 
   assert.equal(drop.defaultPrevented, true)
   assert.equal(fetched, 0, '拖到回收站不应该发 relocate')
   assert.deepEqual(exported.__stores.requestStore.get(), { kind: 'session', sessionId: 'session-1', displayTitle: '' })
-  assert.equal(trash.classList.contains('wsbin-trash-hover'), false, 'drop 后清除高亮')
+  assert.equal(trash.classList.contains('sbin-trash-hover'), false, 'drop 后清除高亮')
 })
 
 test('运行中的会话跨区拖拽先弹确认，不直接 relocate', async () => {
@@ -309,5 +309,5 @@ test('落在整棵列表上不接管', async () => {
   const onTree = { target: tree, dataTransfer: {}, preventDefault() { this.prevented = true }, stopPropagation() { this.stopped = true } }
   listeners.get('dragover')(onTree)
   assert.equal(onTree.prevented ?? false, false)
-  assert.equal(target.classList.contains('wsbin-drop-target'), false)
+  assert.equal(target.classList.contains('sbin-drop-target'), false)
 })

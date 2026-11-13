@@ -117,11 +117,11 @@ test('页脚按钮与回收站面板能渲染（空面板）', async () => {
 
   const footer = render(byName.get('sidebar.footer.action')({ t: (key) => key }))
   assert.equal(texts(footer).includes('bin.open'), true)
-  assert.equal(findByClass(footer, 'wsbin-footer-action').length, 1, '页脚入口要带自适应宽度的类')
+  assert.equal(findByClass(footer, 'sbin-footer-action').length, 1, '页脚入口要带自适应宽度的类')
 
   exported.__stores.binStore.set(true)
   const panel = render(byName.get('shell.overlay')({ t: (key) => key }))
-  assert.equal(findByClass(panel, 'wsbin-dialog').length, 1)
+  assert.equal(findByClass(panel, 'sbin-dialog').length, 1)
   assert.equal(texts(panel).includes('bin.title'), true)
   assert.equal(texts(panel).includes('bin.loading'), true)
 
@@ -153,7 +153,7 @@ test('运行中会话搬移确认框：点确认才发 relocate', async () => {
   const overlay = render(byName.get('shell.overlay')({ t: (key) => key }))
   assert.equal(texts(overlay).includes('move.confirmTitle'), true)
   assert.equal(texts(overlay).includes('move.confirmAction'), true)
-  const confirm = findByClass(overlay, 'wsbin-btn-danger')[0]
+  const confirm = findByClass(overlay, 'sbin-btn-danger')[0]
   assert.notEqual(confirm, undefined)
   const requests = []
   globalThis.fetch = async (url, init) => {
@@ -204,7 +204,7 @@ test('会话菜单行能渲染并触发 requestDelete', async () => {
     t: (key) => key,
   }))
   assert.equal(texts(tree).includes('menu.deleteSession'), true)
-  const button = findByClass(tree, 'wsbin-menu-item')[0]
+  const button = findByClass(tree, 'sbin-menu-item')[0]
   assert.notEqual(button, undefined)
   button.props.onClick()
   assert.deepEqual(requested, { sessionId: 'session-1', displayTitle: '演示会话' })

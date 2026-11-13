@@ -6,7 +6,7 @@
  * `dsh web`）时，macOS 退化成 rename 到 `~/.Trash`，其余平台直接报错——绝不
  * `rm -rf` 冒充回收站。
  *
- * @module dsh-workspace-bin/os-trash
+ * @module dsh-session-bin/os-trash
  */
 
 import { createRequire } from 'node:module'

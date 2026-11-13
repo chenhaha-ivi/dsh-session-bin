@@ -1,7 +1,8 @@
-# dsh-workspace-bin
+# dsh-session-bin
 
 DSH 的会话回收站：删掉的会话先放进来，能恢复、也能彻底删；会话还能直接拖到别的工作区。
 
+> 当前版本 **0.1.0**：包从 `dsh-workspace-bin` 改名为 `dsh-session-bin`，版本号重新起算。
 > 适配 DSH **0.2.2-rc.1 / rc.2**（desktop profile），只走公开 API，不改 `app.asar`、不改核心包。
 > 安装与验收：[INSTALL.md](INSTALL.md) · 版本变化：[CHANGELOG.md](CHANGELOG.md) · 开发与内部实现：[docs/DEVELOPMENT.md](docs/DEVELOPMENT.md)
 
@@ -22,15 +23,20 @@ DSH 的会话回收站：删掉的会话先放进来，能恢复、也能彻底�
 
 ```bash
 cd ~/.dsh/profiles/desktop
-pnpm add link:/Users/chenming/Documents/dsh-workspace-bin
+pnpm add link:<仓库根目录>      # 例如 ~/Documents/dsh-session-bin
 
-# 然后在 profile 的 package.json 里给 dsh.profile.bundles 加一行 "dsh-workspace-bin"
+# 然后在 profile 的 package.json 里给 dsh.profile.bundles 加一行 "dsh-session-bin"
 # 重启 DSH
 ```
 
 装完：侧栏页脚出现「回收站」，会话「…」菜单出现「回收会话」。
 卸载：从 `dsh.profile.bundles` 删掉那一行并重启；回收站目录不会自动清理（手动删就是真删字节）。
 完整步骤、逐项验收和回滚方式见 [INSTALL.md](INSTALL.md)。
+
+> 目前按本地仓库链接（`link:`）安装，包仍是 `private`，没有发布到 npm。
+
+> **从旧包 0.4.x 升级**：仓库目录、profile 依赖和 `dsh.profile.bundles` 都换成新包名
+> `dsh-session-bin`（版本号从 0.1.0 重新起），重启即可；回收站数据与暂存区会在首次启动时自动迁移。
 
 > 与 `dsh-plugin-session-purge` 功能重叠（都是会话回收站），建议二选一。
 
@@ -41,7 +47,7 @@ pnpm add link:/Users/chenming/Documents/dsh-workspace-bin
 
 ```yaml
 # ~/.dsh/profiles/desktop/cordis.patch.yml
-- id: workspace-bin
+- id: session-bin
   config:
     trashWorkspaceFolder: true
 ```
@@ -49,18 +55,21 @@ pnpm add link:/Users/chenming/Documents/dsh-workspace-bin
 开启后，用官方入口删除工作区时，本地文件夹会进系统回收站（macOS 放废纸篓、Finder 可见）。
 DSH home、会话存储根、宿主进程 cwd、其它嵌套工作区的祖先目录会跳过并记日志；
 拿不到系统回收站能力时明确拒绝，绝不 `rm -rf`。
-每次搬移 / 跳过 / 失败都记在 `<DSH_HOME>/workspace-bin/os-trash.log`。
+每次搬移 / 跳过 / 失败都记在 `<DSH_HOME>/session-bin/os-trash.log`。
 
 ## 回收站放在哪
 
-`<DSH_HOME>/workspace-bin/<entryId>/`，每个条目一个目录，`manifest.json` 是唯一清单。
+`<DSH_HOME>/session-bin/<entryId>/`，每个条目一个目录，`manifest.json` 是唯一清单。
 要恢复就回到面板点「恢复」；直接删目录等于放弃恢复。
+
+旧包 0.4.x 的 `<DSH_HOME>/workspace-bin/` 会在首次启动时整目录改名过来，条目不用重写；
+改名失败（跨卷、权限）就继续读写旧目录，不会让回收站看起来空了。
 
 ## 运行中的会话
 
 - 正在跑回合（官方 agent 状态为 `running`）的会话在 **UI 层直接禁用**：菜单「回收会话」灰掉、
   拖拽被取消（原生拖拽也不启动），拖到回收站/其它工作区都不会发生。
-- Host 侧同样拒绝（`workspace-bin/session-running`），防止绕过 UI 的调用。
+- Host 侧同样拒绝（`session-bin/session-running`），防止绕过 UI 的调用。
 - 打开着但空闲的会话仍可安全停活后搬运，不会打断任何回合。
 - 后台任务是否算「运行中」取决于官方 agent 状态：回合结束后 agent 变 idle，此时可以搬。
 

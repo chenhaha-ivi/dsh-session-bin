@@ -1,6 +1,6 @@
 {
-  "name": "dsh-workspace-bin",
-  "version": "0.4.5",
+  "name": "dsh-session-bin",
+  "version": "0.1.0",
   "private": true,
   "description": "会话回收站 + 跨区拖拽：删除的会话先进回收站，可恢复、可永久删除。",
   "type": "module",
@@ -8,9 +8,9 @@
   "keywords": [
     "dsh",
     "dsh-plugin",
-    "workspace",
     "session",
-    "recycle-bin"
+    "recycle-bin",
+    "workspace-move"
   ],
   "exports": {
     ".": "./host.js",
@@ -26,6 +26,7 @@
     "cordis.patch.yml",
     "docs",
     "scripts/repair-duplicates.mjs",
+    "scripts/rename-checkout.mjs",
     "README.md",
     "INSTALL.md",
     "CHANGELOG.md",

@@ -33,7 +33,7 @@ async function addTarget(world, name = 'target') {
 /** 回收站暂存区里还剩什么。 */
 async function stagingEntries(world) {
   try {
-    return await readdir(join(world.sessionsRoot, '_workspace-bin-staging'))
+    return await readdir(join(world.sessionsRoot, '_session-bin-staging'))
   } catch {
     return []
   }
@@ -144,7 +144,7 @@ test('活会话停不下来时拒绝移动，源目录不动', async () => {
     const target = await addTarget(world)
     await assert.rejects(
       world.ops.relocate({ sessionId: 'session-1', targetWorkspaceId: target.workspace.id }),
-      binError('workspace-bin/session-busy'),
+      binError('session-bin/session-busy'),
     )
     assert.equal(await exists(join(world.projectDir, 'session-1')), true)
     assert.deepEqual(await stagingEntries(world), [])
@@ -159,7 +159,7 @@ test('create 失败：暂存区回滚、源目录回位、归属不变', async (
     const target = await addTarget(world)
     await assert.rejects(
       world.ops.relocate({ sessionId: 'session-1', targetWorkspaceId: target.workspace.id }),
-      binError('workspace-bin/move-failed'),
+      binError('session-bin/move-failed'),
     )
     assert.equal(await exists(join(world.projectDir, 'session-1')), true)
     assert.deepEqual(await stagingEntries(world), [])
@@ -187,9 +187,9 @@ test('归属写入失败：文件已就位，留 committed 日志等重启补齐
     assert.equal(report.warnings.some((warning) => warning.includes('workspace membership')), true)
     assert.equal(await exists(join(world.sessionsRoot, projectKey(path), 'session-1')), true)
 
-    const ops = await readdir(join(world.sessionsRoot, '_workspace-bin-staging'))
+    const ops = await readdir(join(world.sessionsRoot, '_session-bin-staging'))
     assert.equal(ops.length, 1)
-    const journal = JSON.parse(await readFile(join(world.sessionsRoot, '_workspace-bin-staging', ops[0], 'journal.json'), 'utf8'))
+    const journal = JSON.parse(await readFile(join(world.sessionsRoot, '_session-bin-staging', ops[0], 'journal.json'), 'utf8'))
     assert.equal(journal.phase, 'committed')
   } finally {
     await dispose(world.home)
@@ -204,7 +204,7 @@ test('启动恢复：目标已可用 -> 补归属并清暂存区', async () => {
     const events = world.persistence.events.get('session-1')
 
     // 造一个「源已 park、后继已建、没来得及清暂存区」的中间态。
-    const opDir = join(world.sessionsRoot, '_workspace-bin-staging', 'op-recover')
+    const opDir = join(world.sessionsRoot, '_session-bin-staging', 'op-recover')
     await mkdir(opDir, { recursive: true })
     await rename(join(world.projectDir, 'session-1'), join(opDir, 'session-1'))
     const writer = await world.persistence.create({ ...header, cwd: target.path })
@@ -237,7 +237,7 @@ test('启动恢复：目标不可用 -> 回滚到源目录', async () => {
   const world = await makeWorld({ sessionIds: ['session-1'] })
   try {
     const target = await addTarget(world)
-    const opDir = join(world.sessionsRoot, '_workspace-bin-staging', 'op-rollback')
+    const opDir = join(world.sessionsRoot, '_session-bin-staging', 'op-rollback')
     await mkdir(opDir, { recursive: true })
     await rename(join(world.projectDir, 'session-1'), join(opDir, 'session-1'))
     await writeFile(join(opDir, 'journal.json'), JSON.stringify({
@@ -267,7 +267,7 @@ test('超大日志在整段读之前就被拒绝', async () => {
     const target = await addTarget(world)
     await assert.rejects(
       world.ops.relocate({ sessionId: 'session-1', targetWorkspaceId: target.workspace.id }),
-      binError('workspace-bin/session-too-large'),
+      binError('session-bin/session-too-large'),
     )
     assert.equal(await exists(join(world.projectDir, 'session-1')), true)
     assert.deepEqual(await stagingEntries(world), [])
@@ -279,9 +279,45 @@ test('超大日志在整段读之前就被拒绝', async () => {
 test('移动未知会话 / 未知目标工作区有稳定错误码', async () => {
   const world = await makeWorld({ sessionIds: ['session-1'] })
   try {
-    await assert.rejects(world.ops.relocate({ sessionId: 'session-x', targetWorkspaceId: 'ws-1' }), binError('workspace-bin/unknown-session'))
-    await assert.rejects(world.ops.relocate({ sessionId: 'session-1', targetWorkspaceId: 'nope' }), binError('workspace-bin/unknown-target-workspace'))
-    await assert.rejects(world.ops.relocate({ sessionId: 'session-1' }), binError('workspace-bin/invalid-request'))
+    await assert.rejects(world.ops.relocate({ sessionId: 'session-x', targetWorkspaceId: 'ws-1' }), binError('session-bin/unknown-session'))
+    await assert.rejects(world.ops.relocate({ sessionId: 'session-1', targetWorkspaceId: 'nope' }), binError('session-bin/unknown-target-workspace'))
+    await assert.rejects(world.ops.relocate({ sessionId: 'session-1' }), binError('session-bin/invalid-request'))
+  } finally {
+    await dispose(world.home)
+  }
+})
+
+test('启动恢复：旧版本的 _workspace-bin-staging 先迁到新目录再补完', async () => {
+  const world = await makeWorld({ sessionIds: ['session-1'] })
+  try {
+    const target = await addTarget(world)
+    const header = world.persistence.headers.get('session-1')
+    const events = world.persistence.events.get('session-1')
+
+    // 升级前崩在搬移中途：暂存区还在旧名字下面。
+    const opDir = join(world.sessionsRoot, '_workspace-bin-staging', 'op-legacy')
+    await mkdir(opDir, { recursive: true })
+    await rename(join(world.projectDir, 'session-1'), join(opDir, 'session-1'))
+    const writer = await world.persistence.create({ ...header, cwd: target.path })
+    await writer.append(events)
+    await writer.flush()
+    await writer.close()
+    await writeFile(join(opDir, 'journal.json'), JSON.stringify({
+      version: 1,
+      opId: 'op-legacy',
+      sessionId: 'session-1',
+      fromCwd: world.workspacePath,
+      toCwd: target.path,
+      createdAt: new Date().toISOString(),
+      events: 2,
+      lastSeq: 1,
+    }))
+
+    const result = await world.ops.recoverMoves()
+    assert.deepEqual(result.recovered, [{ opId: 'op-legacy', sessionId: 'session-1', action: 'completed' }])
+    assert.equal(await exists(join(world.sessionsRoot, '_workspace-bin-staging')), false)
+    assert.deepEqual(await stagingEntries(world), [])
+    assert.equal(await exists(join(world.sessionsRoot, projectKey(target.path), 'session-1')), true)
   } finally {
     await dispose(world.home)
   }

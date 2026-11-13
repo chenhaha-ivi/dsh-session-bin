@@ -36,6 +36,7 @@ coverage/
 
 # ── 包管理器 ────────────────────────────────────────────────────────────
 *.tgz
+.npm-cache/
 pnpm-debug.log*
 npm-debug.log*
 yarn-debug.log*

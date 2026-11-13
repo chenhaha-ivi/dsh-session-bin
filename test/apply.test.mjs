@@ -44,7 +44,7 @@ test('apply 挂一个精确 POST 路由，并注册可拆的 effect', async () =
     assert.equal(registrations.length, 1)
     const route = registrations[0]
     assert.equal(route.path, ROUTE)
-    assert.equal(ROUTE, '/api/workspace-bin')
+    assert.equal(ROUTE, '/api/session-bin')
     assert.deepEqual(route.methods, ['POST'])
     assert.equal(route.requestBody, 'buffered')
     assert.equal(typeof route.fetch, 'function')
@@ -80,8 +80,8 @@ test('apply 挂一个精确 POST 路由，并注册可拆的 effect', async () =
     await new Promise((settle) => setTimeout(settle, 20))
     assert.equal(ctx.effects.length, 2)
     assert.deepEqual(ctx.effects.map((effect) => effect.label), [
-      'workspace-bin: OS trash watcher',
-      'workspace-bin: fetch route',
+      'session-bin: OS trash watcher',
+      'session-bin: fetch route',
     ])
   } finally {
     const { dispose } = await import('./helpers.mjs')
@@ -120,7 +120,7 @@ test('resolveHome：配置 > DSH_HOME > ~/.dsh', () => {
 })
 
 test('插件导出面稳定', () => {
-  assert.equal(name, 'dsh-workspace-bin')
+  assert.equal(name, 'dsh-session-bin')
   assert.deepEqual(inject, ['connection', 'sessionPersistence', 'workspaceRegistry'])
   assert.equal(typeof apply, 'function')
 })

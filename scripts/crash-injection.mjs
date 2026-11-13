@@ -58,8 +58,8 @@ async function copiesOf(world) {
     if (await exists(dir)) found.push(dir === join(world.projectDir, 'session-1') ? 'source' : `sessions/${entry.name}`)
   }
   try {
-    for (const op of await readdir(join(world.sessionsRoot, '_workspace-bin-staging'))) {
-      if (await exists(join(world.sessionsRoot, '_workspace-bin-staging', op, 'session-1'))) found.push(`staging/${op}`)
+    for (const op of await readdir(join(world.sessionsRoot, '_session-bin-staging'))) {
+      if (await exists(join(world.sessionsRoot, '_session-bin-staging', op, 'session-1'))) found.push(`staging/${op}`)
     }
   } catch {
     // 没有暂存区
@@ -141,7 +141,7 @@ const scenarios = [
       assert.deepEqual(after.entries, [])
       assert.equal(await exists(join(world.projectDir, 'session-1')), true, '没有后继：必须回滚回源目录')
       assert.deepEqual(await copiesOf(world), ['source'])
-      const staging = await readdir(join(world.sessionsRoot, '_workspace-bin-staging')).catch(() => [])
+      const staging = await readdir(join(world.sessionsRoot, '_session-bin-staging')).catch(() => [])
       assert.deepEqual(staging, [])
     },
   },
@@ -153,7 +153,7 @@ const scenarios = [
       assert.equal(copies.length, 1, `must end with exactly one copy, got ${copies.join(',')}`)
       assert.equal(copies[0].startsWith('sessions/'), true)
       assert.equal(await exists(join(world.projectDir, 'session-1')), false)
-      const staging = await readdir(join(world.sessionsRoot, '_workspace-bin-staging')).catch(() => [])
+      const staging = await readdir(join(world.sessionsRoot, '_session-bin-staging')).catch(() => [])
       assert.deepEqual(staging, [])
     },
   },

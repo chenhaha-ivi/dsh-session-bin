@@ -13,7 +13,7 @@
  * 任何一步失败都按相反顺序回滚；回滚干净就把空条目删掉，回滚不干净才留
  * `failed` 条目等启动恢复或人工处理（**绝不自动删字节**）。
  *
- * @module dsh-workspace-bin/workspace
+ * @module dsh-session-bin/workspace
  */
 
 import { mkdir, readdir, rename } from 'node:fs/promises'
@@ -133,16 +133,16 @@ export function createWorkspaceOps(deps) {
    */
   async function survey(request) {
     const workspaceId = typeof request?.workspaceId === 'string' ? request.workspaceId.trim() : ''
-    if (workspaceId === '') throw new BinError('workspace-bin/invalid-request', 'workspaceId is required')
+    if (workspaceId === '') throw new BinError('session-bin/invalid-request', 'workspaceId is required')
     const workspace = registry.get?.(workspaceId)
     if (workspace === undefined) {
-      throw new BinError('workspace-bin/unknown-workspace', `the workspace registry holds no workspace ${JSON.stringify(workspaceId)}`, { workspaceId })
+      throw new BinError('session-bin/unknown-workspace', `the workspace registry holds no workspace ${JSON.stringify(workspaceId)}`, { workspaceId })
     }
     const callerSessionId = typeof request?.callerSessionId === 'string' ? request.callerSessionId : undefined
     const sessionIds = [...workspace.sessionIds]
     if (callerSessionId !== undefined && sessionIds.includes(callerSessionId)) {
       throw new BinError(
-        'workspace-bin/caller-session',
+        'session-bin/caller-session',
         'refusing to delete the workspace this operation is running in',
         { callerSessionId },
       )
@@ -179,7 +179,7 @@ export function createWorkspaceOps(deps) {
       }
     } else if (kind !== 'missing') {
       throw new BinError(
-        'workspace-bin/project-unreadable',
+        'session-bin/project-unreadable',
         `cannot read the project directory ${projectDir}`,
         { projectDir },
       )
@@ -396,7 +396,7 @@ export function createWorkspaceOps(deps) {
     const workspace = registry.get?.(plan.workspace.id)
     if (workspace === undefined) {
       throw new BinError(
-        'workspace-bin/unknown-workspace',
+        'session-bin/unknown-workspace',
         `the workspace ${JSON.stringify(plan.workspace.id)} disappeared before the delete started`,
         { workspaceId: plan.workspace.id },
       )
@@ -412,7 +412,7 @@ export function createWorkspaceOps(deps) {
     }
     if (busy.length > 0) {
       throw new BinError(
-        'workspace-bin/session-busy',
+        'session-bin/session-busy',
         `refusing to delete while ${busy.length} session(s) are still writing: ${busy.join(', ')}`,
         { sessions: busy },
       )
@@ -457,7 +457,7 @@ export function createWorkspaceOps(deps) {
       const rollbackFailures = await moveBack(moved)
       if (rollbackFailures.length === 0) await bin.removeEntry(entry.id).catch(() => {})
       else await bin.transition(entry.id, 'failed', { error: reason(error), rollbackFailures }).catch(() => {})
-      throw new BinError('workspace-bin/move-failed', `moving into the recycle bin failed: ${reason(error)}`, {
+      throw new BinError('session-bin/move-failed', `moving into the recycle bin failed: ${reason(error)}`, {
         entryId: entry.id,
         rollbackFailures,
       })
@@ -480,7 +480,7 @@ export function createWorkspaceOps(deps) {
       if (registryDeleted) await recoverRegistration(manifest, rollbackFailures, warnings)
       if (rollbackFailures.length === 0) await bin.removeEntry(entry.id).catch(() => {})
       else await bin.transition(entry.id, 'failed', { error: reason(error), rollbackFailures }).catch(() => {})
-      throw new BinError('workspace-bin/registry-failed', `removing the workspace registration failed: ${reason(error)}`, {
+      throw new BinError('session-bin/registry-failed', `removing the workspace registration failed: ${reason(error)}`, {
         entryId: entry.id,
         rollbackFailures,
       })
@@ -489,7 +489,7 @@ export function createWorkspaceOps(deps) {
     await hooks?.reach?.('after-registry', { entryId: entry.id })
     const finished = await bin.transition(entry.id, 'done', { finishedAt: new Date(now()).toISOString() })
     for (const moved of finished.sessions) announceRemoved(moved.id)
-    log('info', `workspace-bin: workspace ${plan.workspace.id} moved to entry ${entry.id} (${plan.mode})`)
+    log('info', `session-bin: workspace ${plan.workspace.id} moved to entry ${entry.id} (${plan.mode})`)
     return {
       entryId: entry.id,
       mode: plan.mode,
@@ -528,16 +528,16 @@ export function createWorkspaceOps(deps) {
     const manifest = await bin.readManifest(entryId)
     if (manifest.kind === 'session') {
       if (typeof deps.restoreSession !== 'function') {
-        throw new BinError('workspace-bin/wrong-kind', `entry ${entryId} is a session entry, and no session restorer is wired`, { entryId })
+        throw new BinError('session-bin/wrong-kind', `entry ${entryId} is a session entry, and no session restorer is wired`, { entryId })
       }
       return await deps.restoreSession(manifest, entryId)
     }
     if (manifest.kind !== 'workspace') {
-      throw new BinError('workspace-bin/wrong-kind', `entry ${entryId} is a ${manifest.kind} entry`, { entryId })
+      throw new BinError('session-bin/wrong-kind', `entry ${entryId} is a ${manifest.kind} entry`, { entryId })
     }
     if (manifest.state !== 'done') {
       throw new BinError(
-        'workspace-bin/not-done',
+        'session-bin/not-done',
         `entry ${entryId} is ${manifest.state}; only a completed delete can be restored`,
         { entryId, state: manifest.state },
       )
@@ -559,7 +559,7 @@ export function createWorkspaceOps(deps) {
         }
         if ((await pathKind(to)) === 'dir') {
           throw new BinError(
-            'workspace-bin/restore-conflict',
+            'session-bin/restore-conflict',
             `cannot restore session ${session.id}: ${to} already exists`,
             { entryId, sessionId: session.id, path: to },
           )
@@ -571,7 +571,7 @@ export function createWorkspaceOps(deps) {
     } catch (error) {
       const rollbackFailures = await moveBack(moved)
       throw new BinError(
-        'workspace-bin/restore-failed',
+        'session-bin/restore-failed',
         `restoring ${entryId} failed: ${reason(error)}`,
         { entryId, rollbackFailures },
       )
@@ -611,7 +611,7 @@ export function createWorkspaceOps(deps) {
       // 数据已经回位、登记也恢复了：条目删不掉只算遗留垃圾，不该报成恢复失败。
       warnings.push(`remove recycle-bin entry: ${reason(error)}`)
     }
-    log('info', `workspace-bin: restored entry ${entryId} to ${projectDir}`)
+    log('info', `session-bin: restored entry ${entryId} to ${projectDir}`)
     return {
       entryId,
       restoredTo: projectDir,
@@ -706,6 +706,8 @@ export function createWorkspaceOps(deps) {
     const { root, entries, broken } = await bin.scan()
     const rows = []
     for (const entry of entries) {
+      // 会话条目允许 `workspace: null`（删的时候会话本来就没有归属），不能只判 undefined。
+      const record = entry.manifest.workspace
       rows.push({
         id: entry.id,
         kind: entry.manifest.kind,
@@ -714,14 +716,14 @@ export function createWorkspaceOps(deps) {
         finishedAt: entry.manifest.finishedAt,
         error: entry.manifest.error,
         title: entry.manifest.kind === 'workspace'
-          ? (entry.manifest.workspace?.title ?? '')
+          ? (record?.title ?? '')
           : (entry.manifest.sessions[0]?.title ?? ''),
-        workspace: entry.manifest.workspace === undefined
+        workspace: record === undefined || record === null
           ? null
           : {
-              id: entry.manifest.workspace.id,
-              path: entry.manifest.workspace.path,
-              title: entry.manifest.workspace.title,
+              id: record.id,
+              path: record.path,
+              title: record.title,
             },
         sessions: entry.manifest.sessions.map((session) => ({ id: session.id, title: session.title })),
         sessionCount: entry.manifest.sessions.length,
@@ -829,8 +831,8 @@ export function createWorkspaceOps(deps) {
         errors.push(`${entry.id}: ${reason(error)}`)
       }
     }
-    if (recovered.length > 0) log('info', `workspace-bin: startup recovery handled ${recovered.length} entr(ies)`)
-    if (errors.length > 0) log('warn', `workspace-bin: startup recovery reported ${errors.length} problem(s)`)
+    if (recovered.length > 0) log('info', `session-bin: startup recovery handled ${recovered.length} entr(ies)`)
+    if (errors.length > 0) log('warn', `session-bin: startup recovery reported ${errors.length} problem(s)`)
     return { recovered, unresolved, errors }
   }
 

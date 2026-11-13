@@ -1,15 +1,15 @@
 /**
- * dsh-workspace-bin — Host 半边。
+ * dsh-session-bin — Host 半边。
  *
  * 刻意 **不 import 任何 `@deepseek-ai/*` 包**：所有协作者都通过 cordis 服务拿
  * （`workspaceRegistry` / `sessionPersistence` / `sessions` / `connection`），
  * 这样即使 profile 的 node_modules 布局变了，插件也能加载。
  *
  * 激活时只做两件事：
- *   1. 挂一个精确路由 `/api/workspace-bin`（五个端点，见 routes.js）；
+ *   1. 挂一个精确路由 `/api/session-bin`（五个端点，见 routes.js）；
  *   2. 跑一次启动恢复（回收站里 `planned` 的条目收敛，**绝不自动删字节**）。
  *
- * @module dsh-workspace-bin
+ * @module dsh-session-bin
  */
 
 import { homedir } from 'node:os'
@@ -24,10 +24,10 @@ import { createWorkspaceFolderWatcher } from './workspace-watch.js'
 import { trashPathToOs } from './os-trash.js'
 
 /** 插件名（必须与 package.json 的 name 一致）。 */
-export const name = 'dsh-workspace-bin'
+export const name = 'dsh-session-bin'
 
 /** 精确路由：挂在整个 `/api` 载体上，Host/Origin 校验由 connection 先做完。 */
-export const ROUTE = '/api/workspace-bin'
+export const ROUTE = '/api/session-bin'
 
 /**
  * 激活前置的宿主服务。
@@ -55,7 +55,9 @@ export function resolveHome(config) {
  */
 export function apply(ctx, config) {
   const settings = config !== null && typeof config === 'object' ? config : {}
-  const bin = createBin({ home: resolveHome(settings) })
+  const home = resolveHome(settings)
+  // createBin 顺带做一次性目录迁移（旧版本叫 workspace-bin）；logger 只用来记迁移结果。
+  const bin = createBin({ home, logger: ctx.logger })
   const deps = {
     ctx,
     registry: ctx.workspaceRegistry,
@@ -74,11 +76,13 @@ export function apply(ctx, config) {
         ctx,
         registry: ctx.workspaceRegistry,
         logger: ctx.logger,
-        dshHome: resolveHome(settings),
+        dshHome: home,
         sessionsRoot: ctx.sessionPersistence?.root,
+        // 日志跟着回收站根目录走：迁移失败退回旧目录时也不会写出第二个根。
+        logPath: join(bin.root, 'os-trash.log'),
         trash: (path) => trashPathToOs(path),
       })
-  ctx.effect(() => () => folderWatcher.dispose(), 'workspace-bin: OS trash watcher')
+  ctx.effect(() => () => folderWatcher.dispose(), 'session-bin: OS trash watcher')
 
   const sessions = createSessionOps({ ...deps, runtime })
   const moves = createMoveOps({ ...deps, runtime })
@@ -110,15 +114,15 @@ export function apply(ctx, config) {
       requestBody: 'buffered',
       fetch: createRouteHandler(ops),
     }),
-    'workspace-bin: fetch route',
+    'session-bin: fetch route',
   )
 
   // 启动恢复：回收站条目只收敛不删字节；跨区移动的暂存区按「目标是否可用」补完或回滚。
   // 刻意不 await —— 激活不能被文件操作卡住。
   void ops.recover().catch((error) => {
-    ctx.logger?.warn?.('workspace-bin: startup recovery failed', error)
+    ctx.logger?.warn?.('session-bin: startup recovery failed', error)
   })
   void ops.recoverMoves().catch((error) => {
-    ctx.logger?.warn?.('workspace-bin: staging recovery failed', error)
+    ctx.logger?.warn?.('session-bin: staging recovery failed', error)
   })
 }

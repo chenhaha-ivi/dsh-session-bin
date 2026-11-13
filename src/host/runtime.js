@@ -4,7 +4,7 @@
  * workspace.js（删工作区）和 session.js（删会话）都要问同样几个问题，
  * 所以抽在这里，避免两套「停活」逻辑漂移。
  *
- * @module dsh-workspace-bin/runtime
+ * @module dsh-session-bin/runtime
  */
 
 import { stat } from 'node:fs/promises'

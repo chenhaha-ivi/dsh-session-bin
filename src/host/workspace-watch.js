@@ -8,12 +8,13 @@
  *   - 路径是 DSH home、sessions 根、当前进程 cwd、或别的嵌套工作区的祖先时，
  *     一律跳过并记日志，宁可少删不可误删。
  *
- * @module dsh-workspace-bin/workspace-watch
+ * @module dsh-session-bin/workspace-watch
  */
 
 import { appendFile, lstat, mkdir } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { dirname, join, resolve, sep } from 'node:path'
+import { TRASH_ROOT_NAME } from './trash.js'
 
 /** `child` 是否就是 `parent` 或在它里面。 */
 function isInside(parent, child) {
@@ -31,7 +32,7 @@ function isInside(parent, child) {
  * @param {string} [options.dshHome] DSH home（保护路径）。
  * @param {string} [options.sessionsRoot] 会话存储根（保护路径）。
  * @param {string} [options.cwd] 当前进程 cwd（保护路径 / 测试注入）。
- * @param {string} [options.logPath] 搬移日志路径；缺省是 `<dshHome>/workspace-bin/os-trash.log`。
+ * @param {string} [options.logPath] 搬移日志路径；缺省是 `<dshHome>/session-bin/os-trash.log`。
  * @returns {{suppress: (id: string) => void, dispose: () => void, idle: () => Promise<void>, known: Map<string, object>}}
  */
 export function createWorkspaceFolderWatcher(options) {
@@ -39,7 +40,7 @@ export function createWorkspaceFolderWatcher(options) {
   const dshHome = typeof options.dshHome === 'string' && options.dshHome !== '' ? resolve(options.dshHome) : undefined
   const sessionsRoot = typeof options.sessionsRoot === 'string' && options.sessionsRoot !== '' ? resolve(options.sessionsRoot) : undefined
   const cwd = resolve(options.cwd ?? process.cwd())
-  const logPath = options.logPath ?? (dshHome === undefined ? undefined : join(dshHome, 'workspace-bin', 'os-trash.log'))
+  const logPath = options.logPath ?? (dshHome === undefined ? undefined : join(dshHome, TRASH_ROOT_NAME, 'os-trash.log'))
 
   /** workspaceId → { path, title }；删除事件只有 id，全靠这份缓存。 */
   const known = new Map()
@@ -50,14 +51,14 @@ export function createWorkspaceFolderWatcher(options) {
 
   const log = (level, message) => {
     try {
-      logger?.[level]?.(`workspace-bin: ${message}`)
+      logger?.[level]?.(`session-bin: ${message}`)
     } catch {
       // 日志失败不影响删除。
     }
   }
 
   /**
-   * 把一次搬移的结果写进可读的日志文件（`~/.dsh/workspace-bin/os-trash.log`）。
+   * 把一次搬移的结果写进可读的日志文件（`~/.dsh/session-bin/os-trash.log`）。
    * 主机日志在打包后的应用里看不到，这一步是唯一能让用户/维护者事后对账的线索。
    * @param {string} line
    */

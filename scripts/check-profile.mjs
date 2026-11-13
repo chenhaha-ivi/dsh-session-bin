@@ -11,7 +11,7 @@ import { homedir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-const PACKAGE = 'dsh-workspace-bin'
+const PACKAGE = 'dsh-session-bin'
 const here = fileURLToPath(new URL('..', import.meta.url))
 
 async function readJson(path) {

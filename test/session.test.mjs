@@ -127,7 +127,7 @@ test('活会话先释放；释放不了就拒绝且不动文件', async () => {
   const stuck = await makeWorld({ sessionIds: ['session-1'], live: ['session-1'], detachable: false })
   try {
     const plan = await stuck.ops.survey({ sessionId: 'session-1' })
-    await assert.rejects(stuck.ops.execute(plan), binError('workspace-bin/session-busy'))
+    await assert.rejects(stuck.ops.execute(plan), binError('session-bin/session-busy'))
     assert.equal(await exists(join(stuck.projectDir, 'session-1')), true)
     assert.equal((await stuck.bin.scan()).entries.length, 0)
   } finally {
@@ -138,13 +138,13 @@ test('活会话先释放；释放不了就拒绝且不动文件', async () => {
 test('未知会话 / 调用方自己 / 没有目录 的错误码', async () => {
   const world = await makeWorld({ sessionIds: ['session-1'] })
   try {
-    await assert.rejects(world.ops.survey({ sessionId: 'session-unknown' }), binError('workspace-bin/unknown-session'))
+    await assert.rejects(world.ops.survey({ sessionId: 'session-unknown' }), binError('session-bin/unknown-session'))
     await assert.rejects(
       world.ops.survey({ sessionId: 'session-1', callerSessionId: 'session-1' }),
-      binError('workspace-bin/caller-session'),
+      binError('session-bin/caller-session'),
     )
     await rm(join(world.projectDir, 'session-1'), { recursive: true, force: true })
-    await assert.rejects(world.ops.survey({ sessionId: 'session-1' }), binError('workspace-bin/no-session-directory'))
+    await assert.rejects(world.ops.survey({ sessionId: 'session-1' }), binError('session-bin/no-session-directory'))
   } finally {
     await dispose(world.home)
   }
@@ -155,7 +155,7 @@ test('恢复冲突：目标目录已存在时拒绝并保留条目', async () =>
   try {
     const report = await world.ops.execute(await world.ops.survey({ sessionId: 'session-1' }))
     await mkdir(join(world.projectDir, 'session-1'), { recursive: true })
-    await assert.rejects(world.ops.restore(report.entryId), binError('workspace-bin/restore-conflict'))
+    await assert.rejects(world.ops.restore(report.entryId), binError('session-bin/restore-conflict'))
     assert.equal((await world.bin.scan()).entries.length, 1)
   } finally {
     await dispose(world.home)

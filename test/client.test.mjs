@@ -89,7 +89,7 @@ function fakeClientCtx() {
 
 test('client bundle 的模块契约与导出', async () => {
   const { definition, exported } = await loadClient()
-  assert.equal(definition.id, 'dsh-workspace-bin')
+  assert.equal(definition.id, 'dsh-session-bin')
   assert.deepEqual(exported.inject, ['slots', 'locale'])
   assert.equal(typeof exported.apply, 'function')
   assert.equal(typeof exported.formatBytes, 'function')
@@ -111,15 +111,15 @@ test('槽位注册齐全：菜单图标、页脚、overlay', async () => {
 
   const byName = new Map(calls.slots.map((slot) => [slot.name, slot]))
   assert.equal(byName.get('sidebar.workspaces.session.menu.item')?.order, 500)
-  assert.equal(byName.get('sidebar.footer.action')?.locale, 'workspaceBin')
-  assert.equal(byName.get('shell.overlay')?.locale, 'workspaceBin')
+  assert.equal(byName.get('sidebar.footer.action')?.locale, 'sessionBin')
+  assert.equal(byName.get('shell.overlay')?.locale, 'sessionBin')
   assert.equal(calls.slots.length, 3)
   assert.equal(calls.locales.length, 1)
-  assert.equal(calls.locales[0].namespace, 'workspaceBin')
+  assert.equal(calls.locales[0].namespace, 'sessionBin')
   assert.equal(calls.locales[0].dictionaries.zh['menu.deleteSession'], '回收会话')
   assert.equal(typeof calls.locales[0].dictionaries.zh['dialog.descSession'], 'string')
   assert.equal(typeof calls.locales[0].dictionaries.en['menu.deleteSession'], 'string')
-  assert.equal(calls.effects.includes('workspace-bin: styles'), true)
+  assert.equal(calls.effects.includes('session-bin: styles'), true)
 })
 
 test('删掉的会话正开着时收掉主视图', async () => {
@@ -151,7 +151,7 @@ test('拖拽高亮 / toast / 确认条的关键样式还在（防重设计误删
   const { ctx } = fakeClientCtx()
   exported.apply(ctx)
   const css = styles.map((element) => element.textContent).join('\n')
-  for (const selector of ['.wsbin-drop-target', '.wsbin-drop-before', '.wsbin-drop-after', '.wsbin-toast', '.wsbin-toast-error', '.wsbin-confirm']) {
+  for (const selector of ['.sbin-drop-target', '.sbin-drop-before', '.sbin-drop-after', '.sbin-toast', '.sbin-toast-error', '.sbin-confirm']) {
     assert.equal(css.includes(selector), true, `missing ${selector}`)
   }
 })

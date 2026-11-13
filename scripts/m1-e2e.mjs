@@ -15,7 +15,7 @@ import { makeWorld } from '../test/support/world.mjs'
 
 /** 发一个端点调用。 */
 async function call(handler, endpoint, payload) {
-  const response = await handler(new Request('http://localhost/api/workspace-bin', {
+  const response = await handler(new Request('http://localhost/api/session-bin', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ endpoint, payload }),

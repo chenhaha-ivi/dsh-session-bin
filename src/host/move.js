@@ -7,7 +7,7 @@
  *
  *   1. 停活，确认没有写句柄；
  *   2. 读源日志的 header + 全部已提交事件；
- *   3. 把源目录 rename 到 `<sessionsRoot>/_workspace-bin-staging/<opId>/`（比正式目录
+ *   3. 把源目录 rename 到 `<sessionsRoot>/_session-bin-staging/<opId>/`（比正式目录
  *      深一层，后端扫描器看不见），保证同一 id 不会同时出现在两个项目目录里；
  *   4. `sessionPersistence.create({...header, cwd: target})` + `append(events)` + `flush()`；
  *   5. 读回校验：事件条数、末条 seq、header.cwd；通过才删暂存区里的源目录；
@@ -18,7 +18,7 @@
  * `recoverMoves()` 看「目标 artifact 是否已可用」决定补完还是回滚，**绝不自动删源字节**
  * 除非目标已通过读回校验。
  *
- * @module dsh-workspace-bin/move
+ * @module dsh-session-bin/move
  */
 
 import { randomBytes } from 'node:crypto'
@@ -28,7 +28,9 @@ import { BinError, SESSION_ID_PATTERN } from './trash.js'
 import { encodeSegment, projectKey } from './paths.js'
 
 /** 暂存区目录名（会话存储根下，深一层让后端看不见）。 */
-export const STAGING_DIR_NAME = '_workspace-bin-staging'
+export const STAGING_DIR_NAME = '_session-bin-staging'
+/** 旧版本用过的暂存区目录名；升级后第一次启动时并进新目录。 */
+export const LEGACY_STAGING_DIR_NAMES = ['_workspace-bin-staging']
 /** 暂存区 journal 版本。 */
 const JOURNAL_VERSION = 1
 /**
@@ -70,12 +72,40 @@ export function createMoveOps(deps) {
     return join(requireSessionsRoot(), STAGING_DIR_NAME)
   }
 
+  /**
+   * 升级兜底：旧版本把暂存区叫 `_workspace-bin-staging`，先整目录改名过来。
+   * 不迁的话，崩在一次搬移里的会话会永远停在那儿——恢复逻辑只扫新名字。
+   * 新目录已存在时不动旧目录（正常操作下两者不会同时出现）。
+   */
+  async function adoptLegacyStaging() {
+    const target = stagingRoot()
+    try {
+      await realpath(target)
+      return
+    } catch {}
+    for (const legacyName of LEGACY_STAGING_DIR_NAMES) {
+      const legacy = join(dirname(target), legacyName)
+      try {
+        await realpath(legacy)
+      } catch {
+        continue
+      }
+      try {
+        await rename(legacy, target)
+        log('info', `session-bin: migrated the staging directory ${legacy} -> ${target}`)
+      } catch (error) {
+        log('warn', `session-bin: could not migrate ${legacy} to ${target}: ${reason(error)}`)
+      }
+      return
+    }
+  }
+
   /** 解析目标工作区：显式 id 优先，其次路径（目录必须存在），否则用注册表按路径找/建。 */
   async function resolveTarget(request) {
     if (typeof request.targetWorkspaceId === 'string' && request.targetWorkspaceId.trim() !== '') {
       const workspace = registry.get?.(request.targetWorkspaceId.trim())
       if (workspace === undefined) {
-        throw new BinError('workspace-bin/unknown-target-workspace', `the registry holds no workspace ${JSON.stringify(request.targetWorkspaceId)}`, { targetWorkspaceId: request.targetWorkspaceId })
+        throw new BinError('session-bin/unknown-target-workspace', `the registry holds no workspace ${JSON.stringify(request.targetWorkspaceId)}`, { targetWorkspaceId: request.targetWorkspaceId })
       }
       return workspace
     }
@@ -85,13 +115,13 @@ export function createMoveOps(deps) {
       try {
         canonical = await realpath(absolute)
       } catch {
-        throw new BinError('workspace-bin/target-path-missing', `target path does not exist as a directory: ${absolute}`, { targetPath: absolute })
+        throw new BinError('session-bin/target-path-missing', `target path does not exist as a directory: ${absolute}`, { targetPath: absolute })
       }
       const existing = await registry.resolveByPath?.(canonical)
       if (existing !== undefined) return existing
       return await registry.create(canonical)
     }
-    throw new BinError('workspace-bin/invalid-request', 'targetWorkspaceId or targetPath is required')
+    throw new BinError('session-bin/invalid-request', 'targetWorkspaceId or targetPath is required')
   }
 
   /** 把 header 索引指到事实：优先用注册表自己的重建入口，失败再逐字段改。 */
@@ -103,7 +133,7 @@ export function createMoveOps(deps) {
         refreshed = true
       }
     } catch (error) {
-      log('warn', `workspace-bin: refreshing the header index failed: ${reason(error)}`)
+      log('warn', `session-bin: refreshing the header index failed: ${reason(error)}`)
     }
     if (registry.headers instanceof Map) registry.headers.set(sessionId, header)
     if (registry.sessionPaths instanceof Map) registry.sessionPaths.set(sessionId, target.path)
@@ -129,7 +159,7 @@ export function createMoveOps(deps) {
       await table.put?.(sessionId, { ...record, identity: { ...record.identity, cwd: toCwd } })
       return true
     } catch (error) {
-      log('warn', `workspace-bin: retargeting the projection cache failed for ${sessionId}: ${reason(error)}`)
+      log('warn', `session-bin: retargeting the projection cache failed for ${sessionId}: ${reason(error)}`)
       await invalidateProjection(sessionId)
       return false
     }
@@ -141,7 +171,7 @@ export function createMoveOps(deps) {
       const table = ctx?.get?.('storageDomain')?.get?.('session_projcache')?.table?.('sessions')
       await table?.delete?.(sessionId)
     } catch (error) {
-      log('warn', `workspace-bin: projection cache cleanup failed for ${sessionId}: ${reason(error)}`)
+      log('warn', `session-bin: projection cache cleanup failed for ${sessionId}: ${reason(error)}`)
     }
   }
 
@@ -156,7 +186,7 @@ export function createMoveOps(deps) {
     try {
       await rm(sessionDirAt(toCwd, sessionId), { recursive: true, force: true, maxRetries: 2 })
     } catch (error) {
-      log('warn', `workspace-bin: dropping an unverified successor failed: ${reason(error)}`)
+      log('warn', `session-bin: dropping an unverified successor failed: ${reason(error)}`)
     }
   }
 
@@ -204,17 +234,17 @@ export function createMoveOps(deps) {
    */
   async function relocateSession(request) {
     const sessionId = typeof request?.sessionId === 'string' ? request.sessionId.trim() : ''
-    if (sessionId === '') throw new BinError('workspace-bin/invalid-request', 'sessionId is required')
+    if (sessionId === '') throw new BinError('session-bin/invalid-request', 'sessionId is required')
     if (!SESSION_ID_PATTERN.test(sessionId)) {
-      throw new BinError('workspace-bin/invalid-request', `sessionId is not a plain session id: ${JSON.stringify(sessionId)}`, { sessionId })
+      throw new BinError('session-bin/invalid-request', `sessionId is not a plain session id: ${JSON.stringify(sessionId)}`, { sessionId })
     }
     if (typeof request.callerSessionId === 'string' && request.callerSessionId === sessionId) {
-      throw new BinError('workspace-bin/caller-session', 'refusing to move the session this operation is running in', { sessionId })
+      throw new BinError('session-bin/caller-session', 'refusing to move the session this operation is running in', { sessionId })
     }
     const wasRunning = isRunning(sessionId)
     const service = persistence()
     if (service === undefined) {
-      throw new BinError('workspace-bin/no-persistence', 'the session persistence service is unavailable')
+      throw new BinError('session-bin/no-persistence', 'the session persistence service is unavailable')
     }
 
     let header
@@ -224,11 +254,11 @@ export function createMoveOps(deps) {
       header = undefined
     }
     if (header === undefined) {
-      throw new BinError('workspace-bin/unknown-session', `session persistence holds no session ${JSON.stringify(sessionId)}`, { sessionId })
+      throw new BinError('session-bin/unknown-session', `session persistence holds no session ${JSON.stringify(sessionId)}`, { sessionId })
     }
     const fromCwd = typeof header.cwd === 'string' ? header.cwd : undefined
     if (fromCwd === undefined) {
-      throw new BinError('workspace-bin/session-without-cwd', `session ${sessionId} has no cwd, so it cannot be moved to a workspace`, { sessionId })
+      throw new BinError('session-bin/session-without-cwd', `session ${sessionId} has no cwd, so it cannot be moved to a workspace`, { sessionId })
     }
 
     const target = await resolveTarget(request ?? {})
@@ -253,7 +283,7 @@ export function createMoveOps(deps) {
       const sizeBytes = typeof snapshot?.sizeBytes === 'number' ? snapshot.sizeBytes : undefined
       if (sizeBytes !== undefined && sizeBytes > MAX_INLINE_BYTES) {
         throw new BinError(
-          'workspace-bin/session-too-large',
+          'session-bin/session-too-large',
           `session ${sessionId} is ${sizeBytes} bytes, above the ${MAX_INLINE_BYTES}-byte move limit`,
           { sessionId, sizeBytes, limit: MAX_INLINE_BYTES },
         )
@@ -265,7 +295,7 @@ export function createMoveOps(deps) {
 
     const quiesced = await quiesce(sessionId)
     if (!quiesced.released) {
-      throw new BinError('workspace-bin/session-busy', `refusing to move while session ${sessionId} is still writing`, { sessionId, errors: quiesced.errors })
+      throw new BinError('session-bin/session-busy', `refusing to move while session ${sessionId} is still writing`, { sessionId, errors: quiesced.errors })
     }
 
     // 读源：header 与全部已提交事件。读句柄不持有写租约，读完立刻关。
@@ -280,7 +310,7 @@ export function createMoveOps(deps) {
       events = Array.isArray(read?.events) ? read.events : []
       inherited = typeof reader.inheritedEventCount === 'number' ? reader.inheritedEventCount : undefined
     } catch (error) {
-      throw new BinError('workspace-bin/read-failed', `cannot read session ${sessionId}: ${reason(error)}`, { sessionId })
+      throw new BinError('session-bin/read-failed', `cannot read session ${sessionId}: ${reason(error)}`, { sessionId })
     } finally {
       await reader?.close?.().catch(() => {})
     }
@@ -310,7 +340,7 @@ export function createMoveOps(deps) {
       await hooks?.reach?.('after-park', { sessionId, opId })
     } catch (error) {
       await dropOp(opId).catch(() => {})
-      throw new BinError('workspace-bin/move-failed', `parking session ${sessionId} failed: ${reason(error)}`, { sessionId })
+      throw new BinError('session-bin/move-failed', `parking session ${sessionId} failed: ${reason(error)}`, { sessionId })
     }
 
     // 2. 用后继 artifact 重建到目标 cwd。
@@ -332,7 +362,7 @@ export function createMoveOps(deps) {
       } catch (rollback) {
         rollbackError = reason(rollback)
       }
-      throw new BinError('workspace-bin/move-failed', `creating the successor log failed: ${reason(error)}`, {
+      throw new BinError('session-bin/move-failed', `creating the successor log failed: ${reason(error)}`, {
         sessionId,
         rollbackError,
         stagedAt: stagingOp,
@@ -352,7 +382,7 @@ export function createMoveOps(deps) {
       } catch (rollback) {
         rollbackError = reason(rollback)
       }
-      throw new BinError('workspace-bin/verify-failed', `the successor log did not verify (${verified.why}); the move was rolled back`, {
+      throw new BinError('session-bin/verify-failed', `the successor log did not verify (${verified.why}); the move was rolled back`, {
         sessionId,
         rollbackError,
         stagedAt: stagingOp,
@@ -397,9 +427,9 @@ export function createMoveOps(deps) {
     // 归属与投影都改完才删暂存区：中间崩溃时 journal 还在，启动恢复能补。
     // 归属没写上就**保留**已 committed 的 journal，等重启补齐（源字节仍在暂存区，恢复会删）。
     if (registryApplied) {
-      await dropOp(opId).catch((error) => log('warn', `workspace-bin: dropping staging failed: ${reason(error)}`))
+      await dropOp(opId).catch((error) => log('warn', `session-bin: dropping staging failed: ${reason(error)}`))
     }
-    log('info', `workspace-bin: session ${sessionId} moved ${fromCwd} -> ${toCwd}`)
+    log('info', `session-bin: session ${sessionId} moved ${fromCwd} -> ${toCwd}`)
     return {
       sessionId,
       applied: 'moved',
@@ -425,6 +455,7 @@ export function createMoveOps(deps) {
     const errors = []
     let children
     try {
+      await adoptLegacyStaging()
       children = await readdir(stagingRoot(), { withFileTypes: true })
     } catch {
       return { recovered, unresolved, errors }

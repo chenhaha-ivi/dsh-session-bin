@@ -1,5 +1,8 @@
 # dsh-workspace-bin — 工作区回收站 + 会话跨区拖拽
 
+> 历史文档：写于 `dsh-workspace-bin` 时期。当前包名 `dsh-session-bin`、插件 id `session-bin`
+> （0.1.0 起，版本号重新起算）；下文保留当时的旧名。
+
 > 方案初稿 v0.1 · 目标宿主 DSH 0.2.2-rc.1（desktop profile）
 > 这份文件是给"新工作区里的新会话"开工用的起点，不是最终版。
 

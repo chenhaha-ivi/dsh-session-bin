@@ -5,7 +5,7 @@ import { readFile, stat } from 'node:fs/promises'
 /** 包清单是安装时的第一道门：字段错了，插件根本不进加载队列。 */
 test('package.json 的 DSH 清单字段齐全', async () => {
   const pkg = JSON.parse(await readFile(new URL('../package.json', import.meta.url), 'utf8'))
-  assert.equal(pkg.name, 'dsh-workspace-bin')
+  assert.equal(pkg.name, 'dsh-session-bin')
   assert.equal(pkg.type, 'module')
   assert.equal(pkg.exports['.'], './host.js')
   assert.equal(pkg.exports['./client'], './client.js')
@@ -31,10 +31,10 @@ test('icon.svg 是 36×36 的自包含 SVG', async () => {
   for (const forbidden of ['<script', '<style', '<image', 'foreignObject', 'onload=', '<text']) {
     assert.equal(svg.includes(forbidden), false, `icon.svg 不应包含 ${forbidden}`)
   }
-  // 渐变/mask id 以 workspace-bin- 前缀命名，内联到页面时不会撞车。
+  // 渐变/mask id 以 session-bin- 前缀命名，内联到页面时不会撞车。
   const ids = [...svg.matchAll(/id="([^"]+)"/g)].map((m) => m[1])
   assert.ok(ids.length > 0)
-  for (const id of ids) assert.match(id, /^workspace-bin-/)
+  for (const id of ids) assert.match(id, /^session-bin-/)
   for (const ref of [...svg.matchAll(/url\(#([^)]+)\)/g)].map((m) => m[1])) {
     assert.equal(ids.includes(ref), true, `引用了不存在的 id：${ref}`)
   }
@@ -43,6 +43,6 @@ test('icon.svg 是 36×36 的自包含 SVG', async () => {
 test('cordis.patch.yml 插入自己这一行', async () => {
   const text = await readFile(new URL('../cordis.patch.yml', import.meta.url), 'utf8')
   assert.match(text, /- insert:/)
-  assert.match(text, /id: workspace-bin/)
-  assert.match(text, /name: dsh-workspace-bin/)
+  assert.match(text, /id: session-bin/)
+  assert.match(text, /name: dsh-session-bin/)
 })

@@ -138,7 +138,7 @@ test('活会话先释放再删除；释放不了就整体拒绝', async () => {
   const stuck = await makeWorld({ sessionIds: ['session-1'], live: ['session-1'], detachable: false })
   try {
     const plan = await stuck.ops.survey({ workspaceId: 'ws-1' })
-    await assert.rejects(stuck.ops.execute(plan), binError('workspace-bin/session-busy'))
+    await assert.rejects(stuck.ops.execute(plan), binError('session-bin/session-busy'))
     assert.notEqual(stuck.registry.get('ws-1'), undefined)
     assert.equal(await exists(join(stuck.projectDir, 'session-1')), true)
     assert.equal((await stuck.bin.scan()).entries.length, 0)
@@ -170,7 +170,7 @@ test('agent 驱逐失败时仍然整体拒绝，一个字节都不动', async ()
   const world = await makeWorld({ sessionIds: ['session-1'], live: ['session-1'], agentsDetachable: false })
   try {
     const plan = await world.ops.survey({ workspaceId: 'ws-1' })
-    await assert.rejects(world.ops.execute(plan), binError('workspace-bin/session-busy'))
+    await assert.rejects(world.ops.execute(plan), binError('session-bin/session-busy'))
     assert.notEqual(world.registry.get('ws-1'), undefined)
     assert.equal(await exists(join(world.projectDir, 'session-1')), true)
     assert.equal((await world.bin.scan()).entries.length, 0)
@@ -183,7 +183,7 @@ test('注册表删除失败时回滚文件并保留工作区', async () => {
   const world = await makeWorld({ sessionIds: ['session-1'], deleteFails: true })
   try {
     const plan = await world.ops.survey({ workspaceId: 'ws-1' })
-    await assert.rejects(world.ops.execute(plan), binError('workspace-bin/registry-failed'))
+    await assert.rejects(world.ops.execute(plan), binError('session-bin/registry-failed'))
     assert.notEqual(world.registry.get('ws-1'), undefined)
     assert.equal(await exists(join(world.projectDir, 'session-1')), true)
     assert.equal((await world.bin.scan()).entries.length, 0, '回滚干净时不该留下空条目')
@@ -265,7 +265,7 @@ test('拒绝删除调用方自己所在的工作区', async () => {
   try {
     await assert.rejects(
       world.ops.survey({ workspaceId: 'ws-1', callerSessionId: 'session-1' }),
-      binError('workspace-bin/caller-session'),
+      binError('session-bin/caller-session'),
     )
   } finally {
     await dispose(world.home)
@@ -275,8 +275,8 @@ test('拒绝删除调用方自己所在的工作区', async () => {
 test('未知工作区 / 缺参数有稳定错误码', async () => {
   const world = await makeWorld({ sessionIds: [] })
   try {
-    await assert.rejects(world.ops.survey({ workspaceId: 'nope' }), binError('workspace-bin/unknown-workspace'))
-    await assert.rejects(world.ops.survey({}), binError('workspace-bin/invalid-request'))
+    await assert.rejects(world.ops.survey({ workspaceId: 'nope' }), binError('session-bin/unknown-workspace'))
+    await assert.rejects(world.ops.survey({}), binError('session-bin/invalid-request'))
   } finally {
     await dispose(world.home)
   }
@@ -299,7 +299,7 @@ test('恢复工作区：目录回去、登记重建、归档置顶还原、条�
     assert.deepEqual(world.registry.archivedSessionIds, ['session-1'])
     assert.equal((await world.bin.scan()).entries.length, 0)
 
-    await assert.rejects(world.ops.restore(report.entryId), binError('workspace-bin/missing-manifest'))
+    await assert.rejects(world.ops.restore(report.entryId), binError('session-bin/missing-manifest'))
   } finally {
     await dispose(world.home)
   }
@@ -340,6 +340,33 @@ test('list 给面板足够的信息', async () => {
     // 统计一次后回写 manifest，下次 list 直接读，不再递归扫盘。
     const manifest = await world.bin.readManifest(row.id)
     assert.equal(manifest.size, row.size)
+  } finally {
+    await dispose(world.home)
+  }
+})
+
+test('list 能读出没有归属的会话条目（workspace: null）', async () => {
+  const world = await makeWorld({ sessionIds: ['session-1'] })
+  try {
+    // 删会话时会话可能本来就没有归属（原工作区已不在注册表里），manifest 合法地写 null。
+    // 旧 list 只判 undefined，这里会 TypeError，整个面板只剩「宿主内部出错」。
+    const { id } = await world.bin.allocate({
+      version: 1,
+      kind: 'session',
+      createdAt: new Date().toISOString(),
+      state: 'done',
+      workspace: null,
+      projectKey: world.projectKey,
+      size: 123,
+      sessions: [{ id: 'session-1', title: 'demo' }],
+    })
+    const listing = await world.ops.list()
+    assert.equal(listing.entries.length, 1)
+    assert.equal(listing.entries[0].id, id)
+    assert.equal(listing.entries[0].kind, 'session')
+    assert.equal(listing.entries[0].title, 'demo')
+    assert.equal(listing.entries[0].workspace, null)
+    assert.equal(listing.entries[0].size, 123)
   } finally {
     await dispose(world.home)
   }

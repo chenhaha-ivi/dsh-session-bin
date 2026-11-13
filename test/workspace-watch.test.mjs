@@ -64,7 +64,7 @@ test('每次搬移都写一份可读日志', async () => {
   try {
     world.ctx.emit('domain/changed', { domain: 'workspace', table: 'workspaces', operation: 'deleted', key: 'ws-1' })
     await world.watcher.idle()
-    const log = await readFile(join(world.dshHome, 'workspace-bin', 'os-trash.log'), 'utf8')
+    const log = await readFile(join(world.dshHome, 'session-bin', 'os-trash.log'), 'utf8')
     assert.equal(log.includes('moved'), true)
     assert.equal(log.includes(world.workspace), true)
   } finally {

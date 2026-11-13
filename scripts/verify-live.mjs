@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * 重启后的只读验活：确认 `/api/workspace-bin` 已经挂在正在跑的 DSH 上。
+ * 重启后的只读验活：确认 `/api/session-bin` 已经挂在正在跑的 DSH 上。
  *
  * 跑法：node scripts/verify-live.mjs [--url http://127.0.0.1:54821] [--token ...]
  * token 缺省从 ~/.dsh/dsh-web-auth.log 读（本机可读），先用它换浏览器 cookie，
@@ -46,7 +46,7 @@ if (cookies.length === 0) {
 }
 const cookie = cookies.map((value) => value.split(';', 1)[0]).join('; ')
 
-const response = await fetch(base + '/api/workspace-bin', {
+const response = await fetch(base + '/api/session-bin', {
   method: 'POST',
   headers: { 'content-type': 'application/json', cookie },
   body: JSON.stringify({ endpoint: 'list', payload: {} }),

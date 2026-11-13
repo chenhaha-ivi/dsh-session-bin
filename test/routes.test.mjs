@@ -5,7 +5,7 @@ import { createRouteHandler } from '../src/host/routes.js'
 
 /** 把 handler 包成「发一个 POST」。 */
 function post(handler, body) {
-  return handler(new Request('http://localhost/api/workspace-bin', {
+  return handler(new Request('http://localhost/api/session-bin', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: typeof body === 'string' ? body : JSON.stringify(body),
@@ -95,7 +95,7 @@ test('restore 缺 entryId 是稳定错误码', async () => {
   const ops = fakeOps()
   const body = await (await post(createRouteHandler(ops), { endpoint: 'restore', payload: {} })).json()
   assert.equal(body.ok, false)
-  assert.equal(body.error.code, 'workspace-bin/invalid-request')
+  assert.equal(body.error.code, 'session-bin/invalid-request')
 })
 
 test('未知端点 / 坏请求体', async () => {
@@ -103,11 +103,11 @@ test('未知端点 / 坏请求体', async () => {
   const handler = createRouteHandler(ops)
 
   const unknown = await (await post(handler, { endpoint: 'selfdestruct' })).json()
-  assert.equal(unknown.error.code, 'workspace-bin/unknown-endpoint')
+  assert.equal(unknown.error.code, 'session-bin/unknown-endpoint')
 
   const broken = await post(handler, '{oops')
   assert.equal(broken.status, 400)
-  assert.equal((await broken.json()).error.code, 'workspace-bin/bad-request')
+  assert.equal((await broken.json()).error.code, 'session-bin/bad-request')
 
   const notObject = await post(handler, [1, 2, 3])
   assert.equal(notObject.status, 400)
@@ -116,13 +116,13 @@ test('未知端点 / 坏请求体', async () => {
 test('BinError 走信封，未知异常折叠成 failed', async () => {
   const ops = fakeOps({
     survey: async () => {
-      throw new BinError('workspace-bin/unknown-workspace', 'nope', { workspaceId: 'x' })
+      throw new BinError('session-bin/unknown-workspace', 'nope', { workspaceId: 'x' })
     },
   })
   const first = await (await post(createRouteHandler(ops), { endpoint: 'plan', payload: { workspaceId: 'x' } })).json()
   assert.deepEqual(first, {
     ok: false,
-    error: { code: 'workspace-bin/unknown-workspace', message: 'nope', details: { workspaceId: 'x' } },
+    error: { code: 'session-bin/unknown-workspace', message: 'nope', details: { workspaceId: 'x' } },
   })
 
   const second = await (await post(createRouteHandler(fakeOps({
@@ -130,6 +130,6 @@ test('BinError 走信封，未知异常折叠成 failed', async () => {
       throw new Error('boom')
     },
   })), { endpoint: 'list' })).json()
-  assert.equal(second.error.code, 'workspace-bin/failed')
+  assert.equal(second.error.code, 'session-bin/failed')
   assert.equal(second.error.message, 'boom')
 })

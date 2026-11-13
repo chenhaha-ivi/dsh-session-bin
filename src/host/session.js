@@ -12,7 +12,7 @@
  * 会话目录里的 header（含 cwd）跟着目录一起走，所以**不需要重建 header** ——
  * 这也是单会话删除比跨区移动简单的地方（移动要改 cwd，必须用后继 artifact 重建）。
  *
- * @module dsh-workspace-bin/session
+ * @module dsh-session-bin/session
  */
 
 import { mkdir, rename } from 'node:fs/promises'
@@ -63,13 +63,13 @@ export function createSessionOps(deps) {
   /** 找到一个会话的磁盘目录与归属，不执行任何写操作。 */
   async function surveySession(request) {
     const sessionId = typeof request?.sessionId === 'string' ? request.sessionId.trim() : ''
-    if (sessionId === '') throw new BinError('workspace-bin/invalid-request', 'sessionId is required')
+    if (sessionId === '') throw new BinError('session-bin/invalid-request', 'sessionId is required')
     if (!SESSION_ID_PATTERN.test(sessionId)) {
-      throw new BinError('workspace-bin/invalid-request', `sessionId is not a plain session id: ${JSON.stringify(sessionId)}`, { sessionId })
+      throw new BinError('session-bin/invalid-request', `sessionId is not a plain session id: ${JSON.stringify(sessionId)}`, { sessionId })
     }
     const callerSessionId = typeof request?.callerSessionId === 'string' ? request.callerSessionId : undefined
     if (callerSessionId === sessionId) {
-      throw new BinError('workspace-bin/caller-session', 'refusing to delete the session this operation is running in', { callerSessionId })
+      throw new BinError('session-bin/caller-session', 'refusing to delete the session this operation is running in', { callerSessionId })
     }
     const running = isRunning(sessionId)
 
@@ -80,11 +80,11 @@ export function createSessionOps(deps) {
       header = undefined
     }
     if (header === undefined) {
-      throw new BinError('workspace-bin/unknown-session', `session persistence holds no session ${JSON.stringify(sessionId)}`, { sessionId })
+      throw new BinError('session-bin/unknown-session', `session persistence holds no session ${JSON.stringify(sessionId)}`, { sessionId })
     }
     const cwd = typeof header.cwd === 'string' ? header.cwd : undefined
     if (cwd === undefined) {
-      throw new BinError('workspace-bin/session-without-cwd', `session ${sessionId} has no cwd, so its directory cannot be located`, { sessionId })
+      throw new BinError('session-bin/session-without-cwd', `session ${sessionId} has no cwd, so its directory cannot be located`, { sessionId })
     }
 
     const sessionsRoot = requireSessionsRoot()
@@ -94,7 +94,7 @@ export function createSessionOps(deps) {
     const directoryKind = await pathKind(sessionDir)
     if (directoryKind !== 'dir') {
       throw new BinError(
-        'workspace-bin/no-session-directory',
+        'session-bin/no-session-directory',
         `session ${sessionId} has no directory on disk (${directoryKind})`,
         { sessionId, sessionDir },
       )
@@ -142,7 +142,7 @@ export function createSessionOps(deps) {
     const quiesced = await quiesce(session.id)
     warnings.push(...quiesced.errors)
     if (!quiesced.released) {
-      throw new BinError('workspace-bin/session-busy', `refusing to delete while session ${session.id} is still writing`, { sessionId: session.id })
+      throw new BinError('session-bin/session-busy', `refusing to delete while session ${session.id} is still writing`, { sessionId: session.id })
     }
 
     const manifest = {
@@ -175,7 +175,7 @@ export function createSessionOps(deps) {
       await rename(plan.sessionDir, destination)
     } catch (error) {
       await bin.removeEntry(entry.id).catch(() => {})
-      throw new BinError('workspace-bin/move-failed', `moving session ${session.id} into the recycle bin failed: ${reason(error)}`, { entryId: entry.id })
+      throw new BinError('session-bin/move-failed', `moving session ${session.id} into the recycle bin failed: ${reason(error)}`, { entryId: entry.id })
     }
 
     await hooks?.reach?.('after-move', { entryId: entry.id })
@@ -207,7 +207,7 @@ export function createSessionOps(deps) {
       if (rollbackError !== undefined) {
         await bin.transition(entry.id, 'failed', { error: reason(error), rollbackError }).catch(() => {})
       }
-      throw new BinError('workspace-bin/delete-failed', `removing session ${session.id} from its workspace failed: ${reason(error)}`, {
+      throw new BinError('session-bin/delete-failed', `removing session ${session.id} from its workspace failed: ${reason(error)}`, {
         entryId: entry.id,
         rollbackError,
       })
@@ -216,7 +216,7 @@ export function createSessionOps(deps) {
     await hooks?.reach?.('after-registry', { entryId: entry.id })
     const finished = await bin.transition(entry.id, 'done', { finishedAt: new Date(now()).toISOString() })
     for (const moved of finished.sessions) announceRemoved(moved.id)
-    log('info', `workspace-bin: session ${session.id} moved to entry ${entry.id}`)
+    log('info', `session-bin: session ${session.id} moved to entry ${entry.id}`)
     return {
       entryId: entry.id,
       mode: 'session',
@@ -236,7 +236,7 @@ export function createSessionOps(deps) {
   async function restoreSession(manifest, entryId) {
     if (manifest.state !== 'done') {
       throw new BinError(
-        'workspace-bin/not-done',
+        'session-bin/not-done',
         `entry ${entryId} is ${manifest.state}; only a completed delete can be restored`,
         { entryId, state: manifest.state },
       )
@@ -256,7 +256,7 @@ export function createSessionOps(deps) {
       }
       if ((await pathKind(to)) === 'dir') {
         throw new BinError(
-          'workspace-bin/restore-conflict',
+          'session-bin/restore-conflict',
           `cannot restore session ${session.id}: ${to} already exists`,
           { entryId, sessionId: session.id, path: to },
         )
@@ -296,7 +296,7 @@ export function createSessionOps(deps) {
     } catch (error) {
       warnings.push(`remove recycle-bin entry: ${reason(error)}`)
     }
-    log('info', `workspace-bin: restored session entry ${entryId}`)
+    log('info', `session-bin: restored session entry ${entryId}`)
     return {
       entryId,
       kind: 'session',

@@ -7,7 +7,7 @@
  *
  * 移植正确性由 `test/paths.test.mjs` 用 DESIGN.md 里手推的真实样本比对。
  *
- * @module dsh-workspace-bin/paths
+ * @module dsh-session-bin/paths
  */
 
 /** 可以原样出现在路径段里的安全码元。 */

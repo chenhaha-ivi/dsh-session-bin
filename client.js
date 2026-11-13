@@ -1,7 +1,7 @@
 /**
- * dsh-workspace-bin — Client half.
+ * dsh-session-bin — Client half.
  *
- * 三个贡献，全部只通过 Host 的精确 Fetch 路由 `/api/workspace-bin` 干活
+ * 三个贡献，全部只通过 Host 的精确 Fetch 路由 `/api/session-bin` 干活
  * （删除/恢复的事务一律在 Host 侧，这里不碰文件）：
  *
  *   - 会话右键菜单：`sidebar.workspaces.session.menu.item` →「放入回收站」，
@@ -15,7 +15,7 @@
  */
 
 window.__ModuleLoader__.load({
-  id: 'dsh-workspace-bin',
+  id: 'dsh-session-bin',
   factory(require) {
     const React = require('react')
     const h = React.createElement
@@ -33,9 +33,9 @@ window.__ModuleLoader__.load({
       : undefined
 
     /** 本 bundle 文案的 locale 命名空间。 */
-    const NS = 'workspaceBin'
+    const NS = 'sessionBin'
     /** Host 路由，相对页面自身 base（挂载前缀不需要特殊处理）。 */
-    const ROUTE = '/api/workspace-bin'.slice(1)
+    const ROUTE = '/api/session-bin'.slice(1)
 
     const ZH = {
       'menu.deleteSession': '回收会话',
@@ -163,52 +163,52 @@ window.__ModuleLoader__.load({
 
     /** Host 返回的错误码 → 本地化文案。 */
     const REFUSAL_KEYS = {
-      'workspace-bin/unknown-workspace': 'error.unknown-workspace',
-      'workspace-bin/caller-session': 'error.caller-session',
-      'workspace-bin/session-running': 'error.session-running',
-      'workspace-bin/no-sessions-root': 'error.no-sessions-root',
-      'workspace-bin/session-busy': 'error.session-busy',
-      'workspace-bin/project-unreadable': 'error.project-unreadable',
-      'workspace-bin/move-failed': 'error.move-failed',
-      'workspace-bin/registry-failed': 'error.registry-failed',
-      'workspace-bin/restore-conflict': 'error.restore-conflict',
-      'workspace-bin/restore-failed': 'error.restore-failed',
-      'workspace-bin/not-done': 'error.not-done',
-      'workspace-bin/wrong-kind': 'error.wrong-kind',
-      'workspace-bin/invalid-request': 'error.invalid-request',
-      'workspace-bin/bad-request': 'error.bad-request',
-      'workspace-bin/failed': 'error.failed',
-      'workspace-bin/session-too-large': 'error.session-too-large',
+      'session-bin/unknown-workspace': 'error.unknown-workspace',
+      'session-bin/caller-session': 'error.caller-session',
+      'session-bin/session-running': 'error.session-running',
+      'session-bin/no-sessions-root': 'error.no-sessions-root',
+      'session-bin/session-busy': 'error.session-busy',
+      'session-bin/project-unreadable': 'error.project-unreadable',
+      'session-bin/move-failed': 'error.move-failed',
+      'session-bin/registry-failed': 'error.registry-failed',
+      'session-bin/restore-conflict': 'error.restore-conflict',
+      'session-bin/restore-failed': 'error.restore-failed',
+      'session-bin/not-done': 'error.not-done',
+      'session-bin/wrong-kind': 'error.wrong-kind',
+      'session-bin/invalid-request': 'error.invalid-request',
+      'session-bin/bad-request': 'error.bad-request',
+      'session-bin/failed': 'error.failed',
+      'session-bin/session-too-large': 'error.session-too-large',
     }
 
     const STYLES = `
-.wsbin-menu-item {
+.sbin-menu-item {
   display: flex; align-items: center; gap: 6px; width: 100%; min-height: 34px; padding: 6px 8px;
   border: none; border-radius: var(--dsw-radius-md, 8px); background: transparent; cursor: pointer;
   font-family: inherit; font-size: 13px; line-height: 20px; text-align: left;
   color: var(--dsw-alias-state-error-primary, #e5484d);
 }
-.wsbin-menu-item:hover, .wsbin-menu-item:focus-visible { background: var(--dsw-alias-interactive-bg-hover-danger, rgba(229,72,77,.14)); outline: none; }
-.wsbin-icon { display: inline-flex; flex: none; width: 14px; height: 14px; align-items: center; justify-content: center; }
-.wsbin-label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.wsbin-btn {
+.sbin-menu-item:hover, .sbin-menu-item:focus-visible { background: var(--dsw-alias-interactive-bg-hover-danger, rgba(229,72,77,.14)); outline: none; }
+.sbin-icon { display: inline-flex; flex: none; width: 14px; height: 14px; align-items: center; justify-content: center; }
+.sbin-label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sbin-btn {
   box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center; height: 32px;
   padding: 0 12px; border: none; border-radius: var(--dsw-radius-md, 8px); cursor: pointer;
   font-family: inherit; font-size: 13px; line-height: 20px; background: transparent;
   color: var(--dsw-alias-label-primary, #f5f5f5);
 }
-.wsbin-btn:hover:not(:disabled) { background: var(--dsw-alias-interactive-bg-hover, rgba(127,127,127,.14)); }
+.sbin-btn:hover:not(:disabled) { background: var(--dsw-alias-interactive-bg-hover, rgba(127,127,127,.14)); }
 /* 页脚入口跟着侧栏走：撑满可用宽度、左对齐，别做成固定宽的小胶囊。 */
-.wsbin-footer-action { width: 100%; justify-content: flex-start; text-align: left; margin: 8px 0; }
-.wsbin-footer-action.wsbin-trash-hover { background: var(--dsw-alias-interactive-bg-hover-danger, rgba(229,72,77,.14)); box-shadow: inset 0 0 0 1px var(--dsw-alias-state-error-primary, #e5484d); }
-.wsbin-footer-action.wsbin-trash-hover .wsbin-label, .wsbin-footer-action.wsbin-trash-hover .wsbin-icon { color: var(--dsw-alias-state-error-primary, #e5484d); }
-.wsbin-btn:disabled { opacity: .4; cursor: not-allowed; }
-.wsbin-btn-danger { background: var(--dsw-alias-state-error-primary, #e5484d); color: #fff; }
-.wsbin-btn-danger:hover:not(:disabled) { filter: brightness(1.07); background: var(--dsw-alias-state-error-primary, #e5484d); }
-.wsbin-modal { pointer-events: auto; position: fixed; inset: 0; z-index: 1000; display: flex; align-items: center; justify-content: center;
+.sbin-footer-action { width: 100%; justify-content: flex-start; text-align: left; margin: 8px 0; }
+.sbin-footer-action.sbin-trash-hover { background: var(--dsw-alias-interactive-bg-hover-danger, rgba(229,72,77,.14)); box-shadow: inset 0 0 0 1px var(--dsw-alias-state-error-primary, #e5484d); }
+.sbin-footer-action.sbin-trash-hover .sbin-label, .sbin-footer-action.sbin-trash-hover .sbin-icon { color: var(--dsw-alias-state-error-primary, #e5484d); }
+.sbin-btn:disabled { opacity: .4; cursor: not-allowed; }
+.sbin-btn-danger { background: var(--dsw-alias-state-error-primary, #e5484d); color: #fff; }
+.sbin-btn-danger:hover:not(:disabled) { filter: brightness(1.07); background: var(--dsw-alias-state-error-primary, #e5484d); }
+.sbin-modal { pointer-events: auto; position: fixed; inset: 0; z-index: 1000; display: flex; align-items: center; justify-content: center;
   padding: max(24px, var(--dsh-frame-overlay-top, 24px)) 24px; }
-.wsbin-mask { position: absolute; inset: var(--dsh-frame-chrome-top, 0px) 0 0; background: var(--dsw-alias-bg-mask-1, rgba(0,0,0,.45)); }
-.wsbin-dialog {
+.sbin-mask { position: absolute; inset: var(--dsh-frame-chrome-top, 0px) 0 0; background: var(--dsw-alias-bg-mask-1, rgba(0,0,0,.45)); }
+.sbin-dialog {
   box-sizing: border-box; position: relative; z-index: 1; display: flex; flex-direction: column; gap: 14px;
   width: min(560px, calc(100vw - 48px)); max-height: 100%; padding: 24px; overflow: hidden;
   border-radius: var(--dsw-radius-panel, 16px);
@@ -216,49 +216,49 @@ window.__ModuleLoader__.load({
   box-shadow: var(--dsw-elevation-prominent, 0 16px 40px rgba(0,0,0,.36));
   color: var(--dsw-alias-label-primary, #f5f5f5);
 }
-.wsbin-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
-.wsbin-head-main { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
-.wsbin-title { margin: 0; font-size: 17px; line-height: 24px; font-weight: 600; letter-spacing: -.01em; }
-.wsbin-hint { margin: 0; font-size: 12px; line-height: 18px; color: var(--dsw-alias-label-secondary, #a8a8ad); }
-.wsbin-close { flex: none; display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px;
+.sbin-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.sbin-head-main { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.sbin-title { margin: 0; font-size: 17px; line-height: 24px; font-weight: 600; letter-spacing: -.01em; }
+.sbin-hint { margin: 0; font-size: 12px; line-height: 18px; color: var(--dsw-alias-label-secondary, #a8a8ad); }
+.sbin-close { flex: none; display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px;
   border: none; border-radius: var(--dsw-radius-sm, 6px); background: transparent; cursor: pointer;
   color: var(--dsw-alias-label-secondary, #a8a8ad); }
-.wsbin-close:hover { background: var(--dsw-alias-interactive-bg-hover, rgba(127,127,127,.14)); color: var(--dsw-alias-label-primary, #f5f5f5); }
-.wsbin-desc { margin: 0; font-size: 14px; line-height: 22px; }
-.wsbin-muted { font-size: 12px; line-height: 18px; color: var(--dsw-alias-label-secondary, #a8a8ad); }
-.wsbin-code { font-family: var(--dsw-font-mono, ui-monospace, SFMono-Regular, Menlo, monospace); font-size: 12px; line-height: 18px; word-break: break-all; }
-.wsbin-error { margin: 0; font-size: 13px; line-height: 20px; color: var(--dsw-alias-state-error-primary, #e5484d); }
-.wsbin-list { display: flex; flex-direction: column; gap: 8px; max-height: 52vh; overflow-y: auto; overscroll-behavior: contain; padding-right: 2px; }
-.wsbin-row { display: flex; flex-direction: column; gap: 6px; padding: 12px 14px; border-radius: 12px;
+.sbin-close:hover { background: var(--dsw-alias-interactive-bg-hover, rgba(127,127,127,.14)); color: var(--dsw-alias-label-primary, #f5f5f5); }
+.sbin-desc { margin: 0; font-size: 14px; line-height: 22px; }
+.sbin-muted { font-size: 12px; line-height: 18px; color: var(--dsw-alias-label-secondary, #a8a8ad); }
+.sbin-code { font-family: var(--dsw-font-mono, ui-monospace, SFMono-Regular, Menlo, monospace); font-size: 12px; line-height: 18px; word-break: break-all; }
+.sbin-error { margin: 0; font-size: 13px; line-height: 20px; color: var(--dsw-alias-state-error-primary, #e5484d); }
+.sbin-list { display: flex; flex-direction: column; gap: 8px; max-height: 52vh; overflow-y: auto; overscroll-behavior: contain; padding-right: 2px; }
+.sbin-row { display: flex; flex-direction: column; gap: 6px; padding: 12px 14px; border-radius: 12px;
   border: .5px solid var(--dsw-alias-border-l1, rgba(127,127,127,.18));
   background: var(--dsw-alias-bg-layer-1, rgba(127,127,127,.04)); }
-.wsbin-row:hover { border-color: var(--dsw-alias-border-l2, rgba(127,127,127,.3)); }
-.wsbin-row-head { display: flex; align-items: center; gap: 8px; min-width: 0; }
-.wsbin-row-title { flex: 1; min-width: 0; font-size: 13.5px; line-height: 20px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.wsbin-row-actions { display: flex; align-items: center; gap: 2px; flex: none; }
-.wsbin-row-meta { font-size: 11px; line-height: 16px; color: var(--dsw-alias-label-secondary, #a8a8ad); }
-.wsbin-row-path { font-family: var(--dsw-font-mono, ui-monospace, SFMono-Regular, Menlo, monospace); font-size: 11px; line-height: 16px;
+.sbin-row:hover { border-color: var(--dsw-alias-border-l2, rgba(127,127,127,.3)); }
+.sbin-row-head { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.sbin-row-title { flex: 1; min-width: 0; font-size: 13.5px; line-height: 20px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sbin-row-actions { display: flex; align-items: center; gap: 2px; flex: none; }
+.sbin-row-meta { font-size: 11px; line-height: 16px; color: var(--dsw-alias-label-secondary, #a8a8ad); }
+.sbin-row-path { font-family: var(--dsw-font-mono, ui-monospace, SFMono-Regular, Menlo, monospace); font-size: 11px; line-height: 16px;
   color: var(--dsw-alias-label-tertiary, #7f7f86); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.wsbin-badge { flex: none; font-size: 10px; line-height: 14px; padding: 1px 6px; border-radius: 6px;
+.sbin-badge { flex: none; font-size: 10px; line-height: 14px; padding: 1px 6px; border-radius: 6px;
   background: var(--dsw-alias-bg-layer-3, rgba(127,127,127,.14)); color: var(--dsw-alias-label-secondary, #a8a8ad); }
-.wsbin-linkbtn { border: none; background: transparent; color: var(--dsw-alias-label-secondary, #a8a8ad); font: inherit; font-size: 12px;
+.sbin-linkbtn { border: none; background: transparent; color: var(--dsw-alias-label-secondary, #a8a8ad); font: inherit; font-size: 12px;
   line-height: 18px; padding: 4px 8px; border-radius: 6px; cursor: pointer; white-space: nowrap; }
-.wsbin-linkbtn:hover:not(:disabled) { background: var(--dsw-alias-interactive-bg-hover, rgba(127,127,127,.14)); color: var(--dsw-alias-label-primary, #f5f5f5); }
-.wsbin-linkbtn:disabled { opacity: .4; cursor: not-allowed; }
-.wsbin-linkbtn-danger { color: var(--dsw-alias-state-error-primary, #e5484d); }
-.wsbin-linkbtn-danger:hover:not(:disabled) { background: var(--dsw-alias-interactive-bg-hover-danger, rgba(229,72,77,.14)); color: var(--dsw-alias-state-error-primary, #e5484d); }
-.wsbin-more { align-self: center; border: none; background: transparent; color: var(--dsw-alias-label-secondary, #a8a8ad); font: inherit;
+.sbin-linkbtn:hover:not(:disabled) { background: var(--dsw-alias-interactive-bg-hover, rgba(127,127,127,.14)); color: var(--dsw-alias-label-primary, #f5f5f5); }
+.sbin-linkbtn:disabled { opacity: .4; cursor: not-allowed; }
+.sbin-linkbtn-danger { color: var(--dsw-alias-state-error-primary, #e5484d); }
+.sbin-linkbtn-danger:hover:not(:disabled) { background: var(--dsw-alias-interactive-bg-hover-danger, rgba(229,72,77,.14)); color: var(--dsw-alias-state-error-primary, #e5484d); }
+.sbin-more { align-self: center; border: none; background: transparent; color: var(--dsw-alias-label-secondary, #a8a8ad); font: inherit;
   font-size: 12px; line-height: 18px; padding: 6px 10px; border-radius: 6px; cursor: pointer; }
-.wsbin-more:hover { background: var(--dsw-alias-interactive-bg-hover, rgba(127,127,127,.14)); color: var(--dsw-alias-label-primary, #f5f5f5); }
-.wsbin-empty { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 26px 0 22px; color: var(--dsw-alias-label-secondary, #a8a8ad); }
-.wsbin-empty-icon { opacity: .45; }
-.wsbin-footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 2px;
+.sbin-more:hover { background: var(--dsw-alias-interactive-bg-hover, rgba(127,127,127,.14)); color: var(--dsw-alias-label-primary, #f5f5f5); }
+.sbin-empty { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 26px 0 22px; color: var(--dsw-alias-label-secondary, #a8a8ad); }
+.sbin-empty-icon { opacity: .45; }
+.sbin-footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 2px;
   padding-top: 12px; border-top: .5px solid var(--dsw-alias-border-l1, rgba(127,127,127,.18)); }
-.wsbin-drop-target { outline: 2px dashed var(--dsw-alias-state-info-primary, #4c9aff); outline-offset: -2px;
+.sbin-drop-target { outline: 2px dashed var(--dsw-alias-state-info-primary, #4c9aff); outline-offset: -2px;
   border-radius: var(--dsw-radius-md, 8px); background: var(--dsw-alias-interactive-bg-hover, rgba(127,127,127,.08)); }
 /* 跨工作区拖到目标会话行时，复刻官方同款蓝色插入线；拖到工作区目录（标题行）上不画。 */
-.wsbin-drop-before, .wsbin-drop-after { position: relative; }
-.wsbin-drop-before::before, .wsbin-drop-after::after {
+.sbin-drop-before, .sbin-drop-after { position: relative; }
+.sbin-drop-before::before, .sbin-drop-after::after {
   content: ""; z-index: 1; pointer-events: none; position: absolute; height: 12px;
   left: calc(-1 * var(--dsh-sidebar-paint-inset, 0px)); right: calc(4px - var(--dsh-sidebar-paint-inset, 0px));
   background:
@@ -266,18 +266,18 @@ window.__ModuleLoader__.load({
     linear-gradient(125deg, transparent calc(50% - 1px), var(--dsw-alias-state-business-primary, #4c9aff) calc(50% - 1px) calc(50% + 1px), transparent calc(50% + 1px)) 0 5px / 5px 7px no-repeat,
     linear-gradient(var(--dsw-alias-state-business-primary, #4c9aff) 0 0) 4px 5px / calc(100% - 4px) 2px no-repeat;
 }
-.wsbin-drop-before::before { top: -7px; }
-.wsbin-drop-after::after { bottom: -7px; }
-.wsbin-drop-after::after { bottom: -7px; }
-.wsbin-toast { pointer-events: auto; position: fixed; left: 50%; transform: translateX(-50%); z-index: 1000;
+.sbin-drop-before::before { top: -7px; }
+.sbin-drop-after::after { bottom: -7px; }
+.sbin-drop-after::after { bottom: -7px; }
+.sbin-toast { pointer-events: auto; position: fixed; left: 50%; transform: translateX(-50%); z-index: 1000;
   top: max(16px, calc(var(--dsh-frame-top-clearance, 0px) + 12px));
   max-width: min(560px, calc(100vw - 48px)); padding: 10px 16px; border-radius: 10px;
   border: .5px solid var(--dsw-alias-border-l1, rgba(127,127,127,.24));
   background: var(--dsw-alias-bg-overlay, #26262a); color: var(--dsw-alias-label-primary, #f5f5f5);
   box-shadow: var(--dsw-elevation-prominent, 0 8px 24px rgba(0,0,0,.3)); font-size: 13px; line-height: 20px; }
-.wsbin-toast-error { color: var(--dsw-alias-state-error-primary, #e5484d); }
-.wsbin-warning { margin: 0; color: var(--dsw-alias-state-business-primary, #4c9aff); font-size: 12px; line-height: 18px; }
-.wsbin-confirm { display: flex; flex-direction: column; gap: 10px; padding: 12px 14px; border-radius: 10px;
+.sbin-toast-error { color: var(--dsw-alias-state-error-primary, #e5484d); }
+.sbin-warning { margin: 0; color: var(--dsw-alias-state-business-primary, #4c9aff); font-size: 12px; line-height: 18px; }
+.sbin-confirm { display: flex; flex-direction: column; gap: 10px; padding: 12px 14px; border-radius: 10px;
   border: .5px solid var(--dsw-alias-state-error-primary, #e5484d);
   background: var(--dsw-alias-state-error-primary-a08, rgba(229,72,77,.08)); }
 `
@@ -325,7 +325,7 @@ window.__ModuleLoader__.load({
     /** 一整个插件只挂一个 style 元素，随 effect 一起移除。 */
     function insertStyles(css) {
       const element = document.createElement('style')
-      element.setAttribute('data-dsh-plugin', 'dsh-workspace-bin')
+      element.setAttribute('data-dsh-plugin', 'dsh-session-bin')
       element.textContent = css
       document.head.appendChild(element)
       return () => element.remove()
@@ -441,14 +441,14 @@ window.__ModuleLoader__.load({
       return h('button', {
         type: 'button',
         role: 'menuitem',
-        className: 'wsbin-menu-item',
+        className: 'sbin-menu-item',
         onClick: () => {
           setMenuOpen(false)
           requestDelete(sessionId, displayTitle)
         },
       }, [
-        h('span', { key: 'icon', className: 'wsbin-icon', 'aria-hidden': true }, h(TrashIcon, null)),
-        h('span', { key: 'label', className: 'wsbin-label' }, t('menu.deleteSession')),
+        h('span', { key: 'icon', className: 'sbin-icon', 'aria-hidden': true }, h(TrashIcon, null)),
+        h('span', { key: 'label', className: 'sbin-label' }, t('menu.deleteSession')),
       ])
     }
 
@@ -534,13 +534,13 @@ window.__ModuleLoader__.load({
       const t = (key) => ctx.locale.bind(NS)(key)
 
       const clearHighlight = () => {
-        if (highlighted !== null && highlighted.classList !== undefined) highlighted.classList.remove('wsbin-drop-target')
+        if (highlighted !== null && highlighted.classList !== undefined) highlighted.classList.remove('sbin-drop-target')
         highlighted = null
       }
       const clearLine = () => {
         if (lineAnchor !== null && lineAnchor.classList !== undefined) {
-          lineAnchor.classList.remove('wsbin-drop-before')
-          lineAnchor.classList.remove('wsbin-drop-after')
+          lineAnchor.classList.remove('sbin-drop-before')
+          lineAnchor.classList.remove('sbin-drop-after')
         }
         lineAnchor = null
       }
@@ -548,32 +548,32 @@ window.__ModuleLoader__.load({
       const trashTargetOf = (node) => {
         let current = node
         for (let guard = 0; current !== null && current !== undefined && guard < 6; guard += 1) {
-          if (current.classList?.contains?.('wsbin-footer-action') === true) return current
+          if (current.classList?.contains?.('sbin-footer-action') === true) return current
           current = current.parentNode
         }
         return null
       }
       const clearTrash = () => {
-        if (trashHover !== null && trashHover.classList !== undefined) trashHover.classList.remove('wsbin-trash-hover')
+        if (trashHover !== null && trashHover.classList !== undefined) trashHover.classList.remove('sbin-trash-hover')
         trashHover = null
       }
       const setTrash = (node) => {
         if (trashHover === node) return
         clearTrash()
-        if (node?.classList !== undefined) node.classList.add('wsbin-trash-hover')
+        if (node?.classList !== undefined) node.classList.add('sbin-trash-hover')
         trashHover = node
       }
       const setLine = (node, side) => {
-        if (lineAnchor === node && node.classList.contains(`wsbin-drop-${side}`)) return
+        if (lineAnchor === node && node.classList.contains(`sbin-drop-${side}`)) return
         clearLine()
         if (node?.classList === undefined) return
-        node.classList.add(`wsbin-drop-${side}`)
+        node.classList.add(`sbin-drop-${side}`)
         lineAnchor = node
       }
       /**
        * 清掉官方残留的蓝色插入线：官方只在自己的分组里画 marker，指针移出分组后
        * 它不会主动清 `drag.over`，所以拖到别的工作区时源分组可能还挂着那条线。
-       * 只删形如 `*dropBefore` / `*dropAfter` 的类名，不碰我们自己的 `wsbin-drop-*`。
+       * 只删形如 `*dropBefore` / `*dropAfter` 的类名，不碰我们自己的 `sbin-drop-*`。
        */
       const clearNativeMarker = () => {
         if (typeof document.querySelectorAll !== 'function') return
@@ -593,7 +593,7 @@ window.__ModuleLoader__.load({
       const setHighlight = (node) => {
         if (highlighted === node) return
         clearHighlight()
-        if (node?.classList !== undefined) node.classList.add('wsbin-drop-target')
+        if (node?.classList !== undefined) node.classList.add('sbin-drop-target')
         highlighted = node
       }
 
@@ -812,18 +812,18 @@ window.__ModuleLoader__.load({
       const label = count === null || count === 0 ? t('bin.open') : `${t('bin.open')} (${count})`
       return h('button', {
         type: 'button',
-        className: 'wsbin-btn wsbin-footer-action',
+        className: 'sbin-btn sbin-footer-action',
         title: t('bin.title'),
         'aria-expanded': open,
         onClick: () => binStore.set(open === false),
       }, [
-        h('span', { key: 'icon', className: 'wsbin-icon' }, h(TrashIcon, null)),
-        h('span', { key: 'label', className: 'wsbin-label', style: { marginLeft: '6px' } }, label),
+        h('span', { key: 'icon', className: 'sbin-icon' }, h(TrashIcon, null)),
+        h('span', { key: 'label', className: 'sbin-label', style: { marginLeft: '6px' } }, label),
       ])
     }
 
     /** 面板 + 删除确认 + 结果提示共用一个 overlay 注册位。 */
-    function WorkspaceBinOverlay({ t }) {
+    function SessionBinOverlay({ t }) {
       const PAGE_SIZE = 40
       const request = useStoreValue(requestStore)
       const moveRequest = useStoreValue(moveRequestStore)
@@ -969,135 +969,135 @@ window.__ModuleLoader__.load({
         void moveSession(clientCtx, t, pending.sessionId, pending.targetWorkspaceId, pending.insertion, { confirmed: true })
       }
 
-      const moveDialog = moveRequest === null ? null : h('div', { className: 'wsbin-modal', role: 'dialog', 'aria-modal': 'true' }, [
-        h('div', { key: 'mask', className: 'wsbin-mask', onClick: () => moveRequestStore.set(null) }),
-        h('div', { key: 'card', className: 'wsbin-dialog' }, [
-          h('div', { key: 'head', className: 'wsbin-head' }, [
-            h('h2', { key: 'title', className: 'wsbin-title' }, t('move.confirmTitle')),
-            h('button', { key: 'close', type: 'button', className: 'wsbin-close', 'aria-label': t('dialog.close'), onClick: () => moveRequestStore.set(null) }, h(CloseIcon, null)),
+      const moveDialog = moveRequest === null ? null : h('div', { className: 'sbin-modal', role: 'dialog', 'aria-modal': 'true' }, [
+        h('div', { key: 'mask', className: 'sbin-mask', onClick: () => moveRequestStore.set(null) }),
+        h('div', { key: 'card', className: 'sbin-dialog' }, [
+          h('div', { key: 'head', className: 'sbin-head' }, [
+            h('h2', { key: 'title', className: 'sbin-title' }, t('move.confirmTitle')),
+            h('button', { key: 'close', type: 'button', className: 'sbin-close', 'aria-label': t('dialog.close'), onClick: () => moveRequestStore.set(null) }, h(CloseIcon, null)),
           ]),
-          h('p', { key: 'desc', className: 'wsbin-desc' }, t('move.confirmBody')),
-          moveRequest.targetTitle === '' ? null : h('p', { key: 'target', className: 'wsbin-muted' }, t('move.confirmTarget', { target: moveRequest.targetTitle })),
-          h('div', { key: 'footer', className: 'wsbin-footer' }, [
-            h('button', { key: 'cancel', type: 'button', className: 'wsbin-btn', onClick: () => moveRequestStore.set(null) }, t('dialog.cancel')),
-            h('button', { key: 'confirm', type: 'button', className: 'wsbin-btn wsbin-btn-danger', onClick: confirmMove }, t('move.confirmAction')),
+          h('p', { key: 'desc', className: 'sbin-desc' }, t('move.confirmBody')),
+          moveRequest.targetTitle === '' ? null : h('p', { key: 'target', className: 'sbin-muted' }, t('move.confirmTarget', { target: moveRequest.targetTitle })),
+          h('div', { key: 'footer', className: 'sbin-footer' }, [
+            h('button', { key: 'cancel', type: 'button', className: 'sbin-btn', onClick: () => moveRequestStore.set(null) }, t('dialog.cancel')),
+            h('button', { key: 'confirm', type: 'button', className: 'sbin-btn sbin-btn-danger', onClick: confirmMove }, t('move.confirmAction')),
           ]),
         ]),
       ])
 
-      const dialog = request === null ? null : h('div', { className: 'wsbin-modal', role: 'dialog', 'aria-modal': 'true' }, [
-        h('div', { key: 'mask', className: 'wsbin-mask', onClick: () => (busy ? undefined : requestStore.set(null)) }),
-        h('div', { key: 'card', className: 'wsbin-dialog' }, [
-          h('div', { key: 'head', className: 'wsbin-head' }, [
-            h('h2', { key: 'title', className: 'wsbin-title' }, t('dialog.title')),
-            h('button', { key: 'close', type: 'button', className: 'wsbin-close', 'aria-label': t('dialog.close'), onClick: () => requestStore.set(null) }, h(CloseIcon, null)),
+      const dialog = request === null ? null : h('div', { className: 'sbin-modal', role: 'dialog', 'aria-modal': 'true' }, [
+        h('div', { key: 'mask', className: 'sbin-mask', onClick: () => (busy ? undefined : requestStore.set(null)) }),
+        h('div', { key: 'card', className: 'sbin-dialog' }, [
+          h('div', { key: 'head', className: 'sbin-head' }, [
+            h('h2', { key: 'title', className: 'sbin-title' }, t('dialog.title')),
+            h('button', { key: 'close', type: 'button', className: 'sbin-close', 'aria-label': t('dialog.close'), onClick: () => requestStore.set(null) }, h(CloseIcon, null)),
           ]),
-          h('p', { key: 'desc', className: 'wsbin-desc' }, t(described.description, { title: described.title })),
-          plan?.running === true ? h('p', { key: 'running', className: 'wsbin-warning', role: 'status' }, t('dialog.running')) : null,
-          plan === null ? h('p', { key: 'planning', className: 'wsbin-muted' }, t('dialog.planning')) : h('div', { key: 'plan' }, [
-            h('div', { key: 'path', className: 'wsbin-muted' }, t('dialog.path')),
-            h('div', { key: 'code', className: 'wsbin-code' }, described.path),
-            h('p', { key: 'meta', className: 'wsbin-muted', style: { marginTop: '8px' } },
+          h('p', { key: 'desc', className: 'sbin-desc' }, t(described.description, { title: described.title })),
+          plan?.running === true ? h('p', { key: 'running', className: 'sbin-warning', role: 'status' }, t('dialog.running')) : null,
+          plan === null ? h('p', { key: 'planning', className: 'sbin-muted' }, t('dialog.planning')) : h('div', { key: 'plan' }, [
+            h('div', { key: 'path', className: 'sbin-muted' }, t('dialog.path')),
+            h('div', { key: 'code', className: 'sbin-code' }, described.path),
+            h('p', { key: 'meta', className: 'sbin-muted', style: { marginTop: '8px' } },
               [t('dialog.sessions', { count: described.count }), described.size > 0 ? t('dialog.size', { size: formatBytes(described.size) }) : null].filter(Boolean).join(' · ')),
-            described.live === 0 || plan?.running === true ? null : h('p', { key: 'live', className: 'wsbin-muted' }, t('dialog.live', { count: described.live })),
-            h('p', { key: 'mode', className: 'wsbin-muted' }, described.mode),
-            h('p', { key: 'kept', className: 'wsbin-muted' }, t('dialog.kept')),
+            described.live === 0 || plan?.running === true ? null : h('p', { key: 'live', className: 'sbin-muted' }, t('dialog.live', { count: described.live })),
+            h('p', { key: 'mode', className: 'sbin-muted' }, described.mode),
+            h('p', { key: 'kept', className: 'sbin-muted' }, t('dialog.kept')),
           ]),
-          planError === null ? null : h('p', { key: 'error', className: 'wsbin-error', role: 'alert' }, failureText(planError, t)),
-          h('div', { key: 'footer', className: 'wsbin-footer' }, [
-            h('button', { key: 'cancel', type: 'button', className: 'wsbin-btn', disabled: busy, onClick: () => requestStore.set(null) }, t('dialog.cancel')),
-            h('button', { key: 'confirm', type: 'button', className: 'wsbin-btn wsbin-btn-danger', disabled: busy || plan === null, onClick: confirmDelete },
+          planError === null ? null : h('p', { key: 'error', className: 'sbin-error', role: 'alert' }, failureText(planError, t)),
+          h('div', { key: 'footer', className: 'sbin-footer' }, [
+            h('button', { key: 'cancel', type: 'button', className: 'sbin-btn', disabled: busy, onClick: () => requestStore.set(null) }, t('dialog.cancel')),
+            h('button', { key: 'confirm', type: 'button', className: 'sbin-btn sbin-btn-danger', disabled: busy || plan === null, onClick: confirmDelete },
               busy ? t('dialog.deleting') : plan?.running === true ? t('dialog.confirmRunning') : t('dialog.confirm')),
           ]),
         ]),
       ])
 
       const shownCount = Math.min(visibleCount, listing.items.length)
-      const rows = listing.items.slice(0, shownCount).map((entry) => h('div', { key: entry.id, className: 'wsbin-row' }, [
-        h('div', { key: 'head', className: 'wsbin-row-head' }, [
-          h('span', { key: 'badge', className: 'wsbin-badge' }, entry.kind === 'workspace' ? t('bin.workspace') : t('bin.session')),
-          h('span', { key: 'title', className: 'wsbin-row-title', title: entry.title || entry.id }, entry.title || entry.id),
-          h('div', { key: 'actions', className: 'wsbin-row-actions' }, [
+      const rows = listing.items.slice(0, shownCount).map((entry) => h('div', { key: entry.id, className: 'sbin-row' }, [
+        h('div', { key: 'head', className: 'sbin-row-head' }, [
+          h('span', { key: 'badge', className: 'sbin-badge' }, entry.kind === 'workspace' ? t('bin.workspace') : t('bin.session')),
+          h('span', { key: 'title', className: 'sbin-row-title', title: entry.title || entry.id }, entry.title || entry.id),
+          h('div', { key: 'actions', className: 'sbin-row-actions' }, [
             h('button', {
               key: 'restore',
               type: 'button',
-              className: 'wsbin-linkbtn',
+              className: 'sbin-linkbtn',
               disabled: rowBusy !== null,
               onClick: () => restoreEntry(entry),
             }, rowBusy?.action === 'restore' && rowBusy.id === entry.id ? t('bin.restoring') : t('bin.restore')),
             h('button', {
               key: 'purge',
               type: 'button',
-              className: 'wsbin-linkbtn wsbin-linkbtn-danger',
+              className: 'sbin-linkbtn sbin-linkbtn-danger',
               disabled: rowBusy !== null || entry.state === 'planned',
               onClick: () => setConfirm({ kind: 'one', entry }),
             }, t('bin.purge')),
           ]),
         ]),
-        h('div', { key: 'meta', className: 'wsbin-row-meta' },
+        h('div', { key: 'meta', className: 'sbin-row-meta' },
           [t('bin.sessions', { count: entry.sessionCount }), entry.size > 0 ? formatBytes(entry.size) : null, entry.state === 'failed' ? t('bin.failed') : null].filter(Boolean).join(' · ')),
-        h('div', { key: 'path', className: 'wsbin-row-path', title: entry.workspace?.path ?? '' }, entry.workspace?.path ?? ''),
+        h('div', { key: 'path', className: 'sbin-row-path', title: entry.workspace?.path ?? '' }, entry.workspace?.path ?? ''),
       ]))
       const more = listing.items.length > shownCount
         ? h('button', {
             key: 'more',
             type: 'button',
-            className: 'wsbin-more',
+            className: 'sbin-more',
             onClick: () => setVisibleCount(shownCount + PAGE_SIZE),
           }, t('bin.showMore', { count: listing.items.length - shownCount }))
         : null
 
-      const confirmBar = confirm === null ? null : h('div', { key: 'confirm', className: 'wsbin-confirm', role: 'alertdialog' }, [
+      const confirmBar = confirm === null ? null : h('div', { key: 'confirm', className: 'sbin-confirm', role: 'alertdialog' }, [
         h('p', { key: 'text', style: { margin: 0, fontSize: '13px', lineHeight: '20px' } },
           confirm.kind === 'one'
             ? t('bin.confirmPurge', { title: confirm.entry.title || confirm.entry.id })
             : t('bin.confirmClear', { count: listing.items.length })),
         h('div', { key: 'actions', style: { display: 'flex', justifyContent: 'flex-end', gap: '8px' } }, [
-          h('button', { key: 'no', type: 'button', className: 'wsbin-linkbtn', onClick: () => setConfirm(null) }, t('bin.confirmNo')),
+          h('button', { key: 'no', type: 'button', className: 'sbin-linkbtn', onClick: () => setConfirm(null) }, t('bin.confirmNo')),
           h('button', {
             key: 'yes',
             type: 'button',
-            className: 'wsbin-btn wsbin-btn-danger',
+            className: 'sbin-btn sbin-btn-danger',
             onClick: () => (confirm.kind === 'one' ? purgeEntries([confirm.entry.id]) : purgeEntries(undefined)),
           }, t('bin.confirmYes')),
         ]),
       ])
 
-      const panel = open === false ? null : h('div', { className: 'wsbin-modal', role: 'dialog', 'aria-modal': 'true' }, [
-        h('div', { key: 'mask', className: 'wsbin-mask', onClick: () => binStore.set(false) }),
-        h('div', { key: 'card', className: 'wsbin-dialog' }, [
-          h('div', { key: 'head', className: 'wsbin-head' }, [
-            h('div', { key: 'main', className: 'wsbin-head-main' }, [
-              h('h2', { key: 'title', className: 'wsbin-title' }, t('bin.title')),
-              h('p', { key: 'hint', className: 'wsbin-hint' }, t('bin.timing')),
+      const panel = open === false ? null : h('div', { className: 'sbin-modal', role: 'dialog', 'aria-modal': 'true' }, [
+        h('div', { key: 'mask', className: 'sbin-mask', onClick: () => binStore.set(false) }),
+        h('div', { key: 'card', className: 'sbin-dialog' }, [
+          h('div', { key: 'head', className: 'sbin-head' }, [
+            h('div', { key: 'main', className: 'sbin-head-main' }, [
+              h('h2', { key: 'title', className: 'sbin-title' }, t('bin.title')),
+              h('p', { key: 'hint', className: 'sbin-hint' }, t('bin.timing')),
             ]),
-            h('button', { key: 'close', type: 'button', className: 'wsbin-close', 'aria-label': t('bin.close'), onClick: () => binStore.set(false) }, h(CloseIcon, null)),
+            h('button', { key: 'close', type: 'button', className: 'sbin-close', 'aria-label': t('bin.close'), onClick: () => binStore.set(false) }, h(CloseIcon, null)),
           ]),
-          listing.error === null ? null : h('p', { key: 'error', className: 'wsbin-error', role: 'alert' }, failureText(listing.error, t)),
-          listing.broken.length === 0 ? null : h('p', { key: 'broken', className: 'wsbin-error' }, t('bin.broken', { count: listing.broken.length })),
-          listing.loaded === false ? h('p', { key: 'loading', className: 'wsbin-muted' }, t('bin.loading')) : null,
-          listing.loaded === true && listing.items.length === 0 ? h('div', { key: 'empty', className: 'wsbin-empty' }, [
-            h('span', { key: 'icon', className: 'wsbin-empty-icon' }, h(TrashIcon, null)),
+          listing.error === null ? null : h('p', { key: 'error', className: 'sbin-error', role: 'alert' }, failureText(listing.error, t)),
+          listing.broken.length === 0 ? null : h('p', { key: 'broken', className: 'sbin-error' }, t('bin.broken', { count: listing.broken.length })),
+          listing.loaded === false ? h('p', { key: 'loading', className: 'sbin-muted' }, t('bin.loading')) : null,
+          listing.loaded === true && listing.items.length === 0 ? h('div', { key: 'empty', className: 'sbin-empty' }, [
+            h('span', { key: 'icon', className: 'sbin-empty-icon' }, h(TrashIcon, null)),
             h('span', { key: 'text' }, t('bin.empty')),
           ]) : null,
-          h('div', { key: 'list', className: 'wsbin-list' }, rows),
+          h('div', { key: 'list', className: 'sbin-list' }, rows),
           more,
           confirmBar,
-          h('div', { key: 'footer', className: 'wsbin-footer' }, [
+          h('div', { key: 'footer', className: 'sbin-footer' }, [
             h('button', {
               key: 'clear',
               type: 'button',
-              className: 'wsbin-linkbtn wsbin-linkbtn-danger',
+              className: 'sbin-linkbtn sbin-linkbtn-danger',
               disabled: rowBusy !== null || listing.items.length === 0,
               onClick: () => setConfirm({ kind: 'all' }),
             }, rowBusy?.action === 'purge' && rowBusy.id === '*' ? t('bin.clearing') : t('bin.clear')),
-            h('button', { key: 'close', type: 'button', className: 'wsbin-linkbtn', onClick: () => binStore.set(false) }, t('bin.close')),
+            h('button', { key: 'close', type: 'button', className: 'sbin-linkbtn', onClick: () => binStore.set(false) }, t('bin.close')),
           ]),
         ]),
       ])
 
       return h(React.Fragment, null, dialog, moveDialog, panel, toast === null ? null : h('div', {
-        className: toast.error === true ? 'wsbin-toast wsbin-toast-error' : 'wsbin-toast',
+        className: toast.error === true ? 'sbin-toast sbin-toast-error' : 'sbin-toast',
         role: 'status',
       }, toast.text))
     }
@@ -1111,15 +1111,15 @@ window.__ModuleLoader__.load({
      */
     function apply(ctx) {
       clientCtx = ctx
-      ctx.effect(() => insertStyles(STYLES), 'workspace-bin: styles')
-      ctx.effect(() => ctx.locale.register(NS, { zh: ZH, en: EN }), 'workspace-bin: dictionaries')
+      ctx.effect(() => insertStyles(STYLES), 'session-bin: styles')
+      ctx.effect(() => ctx.locale.register(NS, { zh: ZH, en: EN }), 'session-bin: dictionaries')
 
       // 菜单图标的槽位契约：按 key 注册一个组件。
-      ctx.effect(() => installDrag(ctx), 'workspace-bin: drag')
+      ctx.effect(() => installDrag(ctx), 'session-bin: drag')
 
       ctx.slots.inject('sidebar.workspaces.session.menu.item', () => ctx.slots.register({
         name: 'sidebar.workspaces.session.menu.item',
-        id: 'workspace-bin.session',
+        id: 'session-bin.session',
         order: 500,
         locale: NS,
         inject: () => ({
@@ -1133,7 +1133,7 @@ window.__ModuleLoader__.load({
 
       ctx.slots.inject('sidebar.footer.action', () => ctx.slots.register({
         name: 'sidebar.footer.action',
-        id: 'workspace-bin.footer',
+        id: 'session-bin.footer',
         order: 620,
         locale: NS,
         inject: () => ({}),
@@ -1141,10 +1141,10 @@ window.__ModuleLoader__.load({
 
       ctx.slots.inject('shell.overlay', () => ctx.slots.register({
         name: 'shell.overlay',
-        id: 'workspace-bin.overlay',
+        id: 'session-bin.overlay',
         locale: NS,
         inject: () => ({}),
-      }, WorkspaceBinOverlay))
+      }, SessionBinOverlay))
     }
 
     // `__stores` 只给单测用：Node 里没有 React 渲染器，测试靠它把面板打开再渲染。

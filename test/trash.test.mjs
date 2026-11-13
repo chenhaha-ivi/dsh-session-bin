@@ -1,13 +1,16 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
+import { existsSync } from 'node:fs'
 import { mkdir, readdir, readFile, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import {
   BinError,
   ENTRY_ID_PATTERN,
   MANIFEST_NAME,
+  TRASH_ROOT_NAME,
   createBin,
   entryIdOf,
+  migrateLegacyRoot,
   validateManifest,
 } from '../src/host/trash.js'
 import { dispose, tempHome, workspaceManifest } from './helpers.mjs'
@@ -25,7 +28,7 @@ test('allocate + readManifest 往返，目录结构齐全', async () => {
     const manifest = workspaceManifest()
     const entry = await bin.allocate(manifest)
     assert.match(entry.id, ENTRY_ID_PATTERN)
-    assert.equal(bin.root, join(home, 'workspace-bin'))
+    assert.equal(bin.root, join(home, 'session-bin'))
     assert.deepEqual(await bin.readManifest(entry.id), manifest)
     assert.equal((await readdir(entry.dir)).includes(MANIFEST_NAME), true)
     assert.equal((await readdir(bin.sessionsDir(entry.id))).length, 0)
@@ -40,7 +43,7 @@ test('allocate 拒绝非法 manifest', async () => {
     const bin = createBin({ home })
     await assert.rejects(
       bin.allocate(workspaceManifest({ version: 2 })),
-      (error) => error instanceof BinError && error.code === 'workspace-bin/bad-manifest',
+      (error) => error instanceof BinError && error.code === 'session-bin/bad-manifest',
     )
     // 非法 manifest 不该留下半个条目目录。
     const { entries, broken } = await bin.scan()
@@ -71,10 +74,10 @@ test('readManifest 区分缺失与损坏', async () => {
     const bin = createBin({ home })
     const id = '20260101T000000-aaaaaa'
     await mkdir(join(bin.root, id), { recursive: true })
-    await assert.rejects(bin.readManifest(id), (error) => error.code === 'workspace-bin/missing-manifest')
+    await assert.rejects(bin.readManifest(id), (error) => error.code === 'session-bin/missing-manifest')
 
     await writeFile(bin.manifestPath(id), '{not json', 'utf8')
-    await assert.rejects(bin.readManifest(id), (error) => error.code === 'workspace-bin/bad-manifest')
+    await assert.rejects(bin.readManifest(id), (error) => error.code === 'session-bin/bad-manifest')
   } finally {
     await dispose(home)
   }
@@ -91,7 +94,7 @@ test('状态机只允许 planned -> done/failed，同状态幂等', async () => 
     assert.equal(done.finishedAt, '2026-11-12T13:32:00.000Z')
     await assert.rejects(
       bin.transition(id, 'planned'),
-      (error) => error instanceof BinError && error.code === 'workspace-bin/bad-transition',
+      (error) => error instanceof BinError && error.code === 'session-bin/bad-transition',
     )
     assert.equal((await bin.readManifest(id)).state, 'done')
   } finally {
@@ -170,4 +173,47 @@ test('manifest 的 size 可选，但给了就必须是非负有限数', async ()
   assert.equal(validateManifest({ ...base, size: -1 }).length > 0, true)
   assert.equal(validateManifest({ ...base, size: Number.NaN }).length > 0, true)
   assert.equal(validateManifest({ ...base, size: '12' }).length > 0, true)
+})
+
+test('旧 workspace-bin 目录在首次打开时改名成 session-bin，条目仍可读', async () => {
+  const home = await tempHome()
+  try {
+    const id = '20261112T133100-ab1234'
+    const legacy = join(home, 'workspace-bin')
+    await mkdir(join(legacy, id, 'sessions'), { recursive: true })
+    await writeFile(join(legacy, id, MANIFEST_NAME), JSON.stringify(workspaceManifest(), null, 2), 'utf8')
+
+    const migrated = migrateLegacyRoot({ home })
+    assert.equal(migrated.migrated, true)
+    assert.equal(migrated.from, legacy)
+    assert.equal(migrated.root, join(home, TRASH_ROOT_NAME))
+    assert.equal(existsSync(legacy), false)
+
+    const bin = createBin({ home })
+    assert.equal(bin.root, join(home, TRASH_ROOT_NAME))
+    const { entries, broken } = await bin.scan()
+    assert.equal(broken.length, 0)
+    assert.equal(entries.length, 1)
+    assert.equal(entries[0].id, id)
+  } finally {
+    await dispose(home)
+  }
+})
+
+test('新目录已存在时不碰旧目录，也不重复迁移', async () => {
+  const home = await tempHome()
+  try {
+    const legacy = join(home, 'workspace-bin')
+    await mkdir(legacy, { recursive: true })
+    await mkdir(join(home, TRASH_ROOT_NAME), { recursive: true })
+    const bin = createBin({ home })
+    assert.equal(bin.root, join(home, TRASH_ROOT_NAME))
+    // 新目录由第一次写入保证存在；此前的目录不该被当成迁移源。
+    assert.equal(migrateLegacyRoot({ home }).migrated, false)
+    await bin.ensure()
+    assert.equal(existsSync(legacy), true)
+    assert.equal(existsSync(join(home, TRASH_ROOT_NAME)), true)
+  } finally {
+    await dispose(home)
+  }
 })
