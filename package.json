@@ -1,0 +1,55 @@
+{
+  "name": "dsh-workspace-bin",
+  "version": "0.3.3",
+  "private": true,
+  "description": "会话回收站 + 跨区拖拽：删除的会话先进回收站，可恢复、可永久删除。",
+  "type": "module",
+  "license": "MIT",
+  "keywords": [
+    "dsh",
+    "dsh-plugin",
+    "workspace",
+    "session",
+    "recycle-bin"
+  ],
+  "exports": {
+    ".": "./host.js",
+    "./client": "./client.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "host.js",
+    "client.js",
+    "src",
+    "cordis.patch.yml",
+    "README.md",
+    "INSTALL.md",
+    "CHANGELOG.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "test": "node --test",
+    "e2e": "node scripts/m1-e2e.mjs",
+    "e2e:session": "node scripts/m3-session-e2e.mjs",
+    "e2e:move": "node scripts/m3-move-e2e.mjs",
+    "crash": "node scripts/crash-injection.mjs"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "engines": {
+      "dsh": ">=0.2.2-rc.1 <0.3.0"
+    },
+    "client": {
+      "platform": "web",
+      "immediately": true,
+      "inject": [
+        "@deepseek-ai/dsh-client-ui-workspace"
+      ]
+    }
+  }
+}

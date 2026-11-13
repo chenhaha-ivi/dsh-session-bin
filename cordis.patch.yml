@@ -1,0 +1,5 @@
+# Bundle patch: 插入 dsh-workspace-bin 的 Host 行。
+# Client 半边由 package.json 的 `dsh.client` 段加载，不需要第二行。
+- insert:
+    - id: workspace-bin
+      name: dsh-workspace-bin
