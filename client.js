@@ -39,6 +39,7 @@ window.__ModuleLoader__.load({
 
     const ZH = {
       'menu.deleteSession': '回收会话',
+      'menu.deleteSessionRunning': '会话正在运行，停止后才能回收',
       'dialog.title': '删除到回收站',
       'dialog.close': '关闭',
       'dialog.descSession': '「{title}」这个会话会移入回收站，文件不会立刻删除；随时可以恢复。',
@@ -94,6 +95,7 @@ window.__ModuleLoader__.load({
 
     const EN = {
       'menu.deleteSession': 'Recycle session',
+      'menu.deleteSessionRunning': 'The session is running; stop it before recycling',
       'dialog.title': 'Move to Recycle Bin',
       'dialog.close': 'Close',
       'dialog.descSession': '"{title}" moves to the recycle bin. Its files are kept and it can be restored at any time.',
@@ -168,6 +170,7 @@ window.__ModuleLoader__.load({
     }
 
     const STYLES = `
+.wsbin-menu-item:disabled { opacity: .45; cursor: not-allowed; }
 .wsbin-menu-item {
   display: flex; align-items: center; gap: 6px; width: 100%; min-height: 34px; padding: 6px 8px;
   border: none; border-radius: var(--dsw-radius-md, 8px); background: transparent; cursor: pointer;
@@ -419,13 +422,20 @@ window.__ModuleLoader__.load({
     }
 
     /** 会话右键菜单里的那一行：把单个会话放进回收站。 */
-    function SessionBinMenuItem({ sessionId, displayTitle, useMenuOpenState, requestDelete, t }) {
+    function SessionBinMenuItem({ sessionId, displayTitle, useMenuOpenState, requestDelete, useSessionStatus, t }) {
       const [, setMenuOpen] = useMenuOpenState()
+      const running = typeof useSessionStatus === 'function'
+        ? useSessionStatus((snapshot) => snapshot?.get?.(sessionId)?.running === true)
+        : false
       return h('button', {
         type: 'button',
         role: 'menuitem',
         className: 'wsbin-menu-item',
+        disabled: running,
+        'aria-disabled': running ? 'true' : undefined,
+        title: running ? t('menu.deleteSessionRunning') : undefined,
         onClick: () => {
+          if (running) return
           setMenuOpen(false)
           requestDelete(sessionId, displayTitle)
         },
@@ -442,6 +452,16 @@ window.__ModuleLoader__.load({
       if (typeof direct === 'string') return direct
       const viaDataset = node.dataset?.rowKey ?? node.dataset?.rowkey
       return typeof viaDataset === 'string' ? viaDataset : null
+    }
+
+    /** 会话是不是正在跑（官方 uiSession 状态；拿不到按未运行处理，Host 还会兜底）。 */
+    function isSessionRunning(ctx, sessionId) {
+      try {
+        const status = ctx?.get?.('uiSession')?.sessionStatus?.getSnapshot?.()?.get?.(sessionId)
+        return status?.running === true
+      } catch {
+        return false
+      }
     }
 
     /** 从事件目标向上找到会话行，返回 sessionId；不是会话行就 null。 */
@@ -562,6 +582,12 @@ window.__ModuleLoader__.load({
       const onDragStart = (event) => {
         const sessionId = sessionIdOfNode(event.target)
         if (sessionId === null) return
+        if (isSessionRunning(ctx, sessionId)) {
+          // UI 层直接禁用：取消原生拖拽，也挡住官方组内排序。
+          event.preventDefault?.()
+          event.stopPropagation?.()
+          return
+        }
         dragging = {
           sessionId,
           sourceWorkspaceId: workspaceGroupOf(event.target)?.workspaceId ?? null,

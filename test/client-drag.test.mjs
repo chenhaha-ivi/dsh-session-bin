@@ -275,6 +275,27 @@ test('拖到页脚回收站：高亮，drop 打开回收确认而不是搬运', 
   assert.equal(trash.classList.contains('wsbin-trash-hover'), false, 'drop 后清除高亮')
 })
 
+test('正在跑的会话在 UI 层就禁止拖拽（取消原生拖拽）', async () => {
+  const { exported, listeners } = await loadClient()
+  const ctx = fakeCtx()
+  ctx.get = (name) => (name === 'uiSession'
+    ? { sessionStatus: { getSnapshot: () => new Map([['session-1', { running: true }]]) } }
+    : undefined)
+  exported.apply(ctx)
+  const tree = makeNode()
+  const source = tree.append(makeGroup('ws-1', ['session-1']))
+  const target = tree.append(makeGroup('ws-2', ['session-2']))
+  const event = events()
+  const start = event.track('dragstart', source.children[1])
+  listeners.get('dragstart')(start)
+  assert.equal(start.defaultPrevented, true, '取消浏览器拖拽')
+  assert.equal(start.stopped, true, '别让官方组内排序接手')
+  const over = event.track('dragover', target.children[1])
+  listeners.get('dragover')(over)
+  assert.equal(over.defaultPrevented, false)
+  assert.equal(target.classList.contains('wsbin-drop-target'), false)
+})
+
 test('落在整棵列表上不接管', async () => {
   const { exported, listeners } = await loadClient()
   exported.apply(fakeCtx())
