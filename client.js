@@ -64,6 +64,7 @@ window.__ModuleLoader__.load({
       'bin.restore': '恢复',
       'bin.restoring': '正在恢复…',
       'bin.purge': '永久删除',
+      'bin.failed': '失败',
       'bin.purging': '正在删除…',
       'bin.clear': '清空回收站',
       'bin.clearing': '正在清空…',
@@ -122,6 +123,7 @@ window.__ModuleLoader__.load({
       'bin.restore': 'Restore',
       'bin.restoring': 'Restoring…',
       'bin.purge': 'Delete permanently',
+      'bin.failed': 'Failed',
       'bin.purging': 'Deleting…',
       'bin.clear': 'Empty the bin',
       'bin.clearing': 'Emptying…',
@@ -198,39 +200,48 @@ window.__ModuleLoader__.load({
   padding: max(24px, var(--dsh-frame-overlay-top, 24px)) 24px; }
 .wsbin-mask { position: absolute; inset: var(--dsh-frame-chrome-top, 0px) 0 0; background: var(--dsw-alias-bg-mask-1, rgba(0,0,0,.45)); }
 .wsbin-dialog {
-  box-sizing: border-box; position: relative; z-index: 1; display: flex; flex-direction: column; gap: 12px;
-  width: min(440px, 100%); max-height: 100%; padding: 22px 24px 20px; overflow: auto;
+  box-sizing: border-box; position: relative; z-index: 1; display: flex; flex-direction: column; gap: 14px;
+  width: min(560px, calc(100vw - 48px)); max-height: 100%; padding: 24px; overflow: hidden;
   border-radius: var(--dsw-radius-panel, 16px);
   background: var(--dsw-alias-bg-layer-2, var(--dsw-alias-bg-overlay, #202024));
   box-shadow: var(--dsw-elevation-prominent, 0 16px 40px rgba(0,0,0,.36));
   color: var(--dsw-alias-label-primary, #f5f5f5);
 }
-.wsbin-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-.wsbin-title { margin: 0; font-size: 16px; line-height: 24px; font-weight: 500; }
+.wsbin-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.wsbin-head-main { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.wsbin-title { margin: 0; font-size: 17px; line-height: 24px; font-weight: 600; letter-spacing: -.01em; }
+.wsbin-hint { margin: 0; font-size: 12px; line-height: 18px; color: var(--dsw-alias-label-secondary, #a8a8ad); }
 .wsbin-close { flex: none; display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px;
   border: none; border-radius: var(--dsw-radius-sm, 6px); background: transparent; cursor: pointer;
   color: var(--dsw-alias-label-secondary, #a8a8ad); }
-.wsbin-close:hover { background: var(--dsw-alias-interactive-bg-hover, rgba(127,127,127,.14)); }
+.wsbin-close:hover { background: var(--dsw-alias-interactive-bg-hover, rgba(127,127,127,.14)); color: var(--dsw-alias-label-primary, #f5f5f5); }
 .wsbin-desc { margin: 0; font-size: 14px; line-height: 22px; }
 .wsbin-muted { font-size: 12px; line-height: 18px; color: var(--dsw-alias-label-secondary, #a8a8ad); }
 .wsbin-code { font-family: var(--dsw-font-mono, ui-monospace, SFMono-Regular, Menlo, monospace); font-size: 12px; line-height: 18px; word-break: break-all; }
 .wsbin-error { margin: 0; font-size: 13px; line-height: 20px; color: var(--dsw-alias-state-error-primary, #e5484d); }
-.wsbin-footer { display: flex; justify-content: flex-end; gap: 8px; margin-top: 2px; }
-.wsbin-row { display: flex; align-items: center; gap: 8px; padding: 8px; border-radius: var(--dsw-radius-md, 8px); }
-.wsbin-row:hover { background: var(--dsw-alias-interactive-bg-hover, rgba(127,127,127,.08)); }
-.wsbin-row-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
-.wsbin-row-title { font-size: 13px; line-height: 20px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.wsbin-row-meta { font-size: 11px; line-height: 16px; color: var(--dsw-alias-label-secondary, #a8a8ad); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.wsbin-badge { flex: none; font-size: 10px; line-height: 14px; padding: 1px 6px; border-radius: 999px; border: .5px solid var(--dsw-alias-border-l2, rgba(127,127,127,.3)); color: var(--dsw-alias-label-secondary, #a8a8ad); }
-.wsbin-drop-target { outline: 2px dashed var(--dsw-alias-state-info-primary, #4c9aff); outline-offset: -2px; border-radius: var(--dsw-radius-md, 8px); background: var(--dsw-alias-interactive-bg-hover, rgba(127,127,127,.08)); }
-.wsbin-toast { pointer-events: auto; position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%); z-index: 1000;
-  max-width: min(560px, calc(100vw - 48px)); padding: 10px 16px; border-radius: var(--dsw-radius-md, 8px);
-  border: .5px solid var(--dsw-alias-border-l1, rgba(127,127,127,.24));
-  background: var(--dsw-alias-bg-overlay, #26262a); color: var(--dsw-alias-label-primary, #f5f5f5);
-  box-shadow: var(--dsw-elevation-prominent, 0 8px 24px rgba(0,0,0,.3)); font-size: 13px; line-height: 20px; }
-.wsbin-toast-error { color: var(--dsw-alias-state-error-primary, #e5484d); }
-.wsbin-confirm { display: flex; flex-direction: column; gap: 8px; padding: 10px 12px; border-radius: var(--dsw-radius-md, 8px);
-  border: .5px solid var(--dsw-alias-state-error-primary, #e5484d); background: var(--dsw-alias-bg-layer-2, rgba(229,72,77,.06)); }
+.wsbin-list { display: flex; flex-direction: column; gap: 8px; max-height: 52vh; overflow-y: auto; overscroll-behavior: contain; padding-right: 2px; }
+.wsbin-row { display: flex; flex-direction: column; gap: 6px; padding: 12px 14px; border-radius: 12px;
+  border: .5px solid var(--dsw-alias-border-l1, rgba(127,127,127,.18));
+  background: var(--dsw-alias-bg-layer-1, rgba(127,127,127,.04)); }
+.wsbin-row:hover { border-color: var(--dsw-alias-border-l2, rgba(127,127,127,.3)); }
+.wsbin-row-head { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.wsbin-row-title { flex: 1; min-width: 0; font-size: 13.5px; line-height: 20px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wsbin-row-actions { display: flex; align-items: center; gap: 2px; flex: none; }
+.wsbin-row-meta { font-size: 11px; line-height: 16px; color: var(--dsw-alias-label-secondary, #a8a8ad); }
+.wsbin-row-path { font-family: var(--dsw-font-mono, ui-monospace, SFMono-Regular, Menlo, monospace); font-size: 11px; line-height: 16px;
+  color: var(--dsw-alias-label-tertiary, #7f7f86); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wsbin-badge { flex: none; font-size: 10px; line-height: 14px; padding: 1px 6px; border-radius: 6px;
+  background: var(--dsw-alias-bg-layer-3, rgba(127,127,127,.14)); color: var(--dsw-alias-label-secondary, #a8a8ad); }
+.wsbin-linkbtn { border: none; background: transparent; color: var(--dsw-alias-label-secondary, #a8a8ad); font: inherit; font-size: 12px;
+  line-height: 18px; padding: 4px 8px; border-radius: 6px; cursor: pointer; white-space: nowrap; }
+.wsbin-linkbtn:hover:not(:disabled) { background: var(--dsw-alias-interactive-bg-hover, rgba(127,127,127,.14)); color: var(--dsw-alias-label-primary, #f5f5f5); }
+.wsbin-linkbtn:disabled { opacity: .4; cursor: not-allowed; }
+.wsbin-linkbtn-danger { color: var(--dsw-alias-state-error-primary, #e5484d); }
+.wsbin-linkbtn-danger:hover:not(:disabled) { background: var(--dsw-alias-interactive-bg-hover-danger, rgba(229,72,77,.14)); color: var(--dsw-alias-state-error-primary, #e5484d); }
+.wsbin-empty { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 26px 0 22px; color: var(--dsw-alias-label-secondary, #a8a8ad); }
+.wsbin-empty-icon { opacity: .45; }
+.wsbin-footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 2px;
+  padding-top: 12px; border-top: .5px solid var(--dsw-alias-border-l1, rgba(127,127,127,.18)); }
 `
 
     /** 最小外部 store：一个值 + 同步通知。 */
@@ -746,27 +757,29 @@ window.__ModuleLoader__.load({
       ])
 
       const rows = listing.items.map((entry) => h('div', { key: entry.id, className: 'wsbin-row' }, [
-        h('span', { key: 'badge', className: 'wsbin-badge' }, entry.kind === 'workspace' ? t('bin.workspace') : t('bin.session')),
-        h('div', { key: 'main', className: 'wsbin-row-main' }, [
-          h('div', { key: 'title', className: 'wsbin-row-title' }, entry.title || entry.id),
-          h('div', { key: 'meta', className: 'wsbin-row-meta' },
-            [t('bin.sessions', { count: entry.sessionCount }), entry.size > 0 ? formatBytes(entry.size) : null, entry.state === 'failed' ? 'failed' : null].filter(Boolean).join(' · ')),
-          h('div', { key: 'path', className: 'wsbin-row-meta' }, entry.workspace?.path ?? ''),
+        h('div', { key: 'head', className: 'wsbin-row-head' }, [
+          h('span', { key: 'badge', className: 'wsbin-badge' }, entry.kind === 'workspace' ? t('bin.workspace') : t('bin.session')),
+          h('span', { key: 'title', className: 'wsbin-row-title', title: entry.title || entry.id }, entry.title || entry.id),
+          h('div', { key: 'actions', className: 'wsbin-row-actions' }, [
+            h('button', {
+              key: 'restore',
+              type: 'button',
+              className: 'wsbin-linkbtn',
+              disabled: rowBusy !== null,
+              onClick: () => restoreEntry(entry),
+            }, rowBusy?.action === 'restore' && rowBusy.id === entry.id ? t('bin.restoring') : t('bin.restore')),
+            h('button', {
+              key: 'purge',
+              type: 'button',
+              className: 'wsbin-linkbtn wsbin-linkbtn-danger',
+              disabled: rowBusy !== null || entry.state === 'planned',
+              onClick: () => setConfirm({ kind: 'one', entry }),
+            }, t('bin.purge')),
+          ]),
         ]),
-        h('button', {
-          key: 'restore',
-          type: 'button',
-          className: 'wsbin-btn',
-          disabled: rowBusy !== null,
-          onClick: () => restoreEntry(entry),
-        }, rowBusy?.action === 'restore' && rowBusy.id === entry.id ? t('bin.restoring') : t('bin.restore')),
-        h('button', {
-          key: 'purge',
-          type: 'button',
-          className: 'wsbin-btn',
-          disabled: rowBusy !== null || entry.state === 'planned',
-          onClick: () => setConfirm({ kind: 'one', entry }),
-        }, t('bin.purge')),
+        h('div', { key: 'meta', className: 'wsbin-row-meta' },
+          [t('bin.sessions', { count: entry.sessionCount }), entry.size > 0 ? formatBytes(entry.size) : null, entry.state === 'failed' ? t('bin.failed') : null].filter(Boolean).join(' · ')),
+        h('div', { key: 'path', className: 'wsbin-row-path', title: entry.workspace?.path ?? '' }, entry.workspace?.path ?? ''),
       ]))
 
       const confirmBar = confirm === null ? null : h('div', { key: 'confirm', className: 'wsbin-confirm', role: 'alertdialog' }, [
@@ -775,7 +788,7 @@ window.__ModuleLoader__.load({
             ? t('bin.confirmPurge', { title: confirm.entry.title || confirm.entry.id })
             : t('bin.confirmClear', { count: listing.items.length })),
         h('div', { key: 'actions', style: { display: 'flex', justifyContent: 'flex-end', gap: '8px' } }, [
-          h('button', { key: 'no', type: 'button', className: 'wsbin-btn', onClick: () => setConfirm(null) }, t('bin.confirmNo')),
+          h('button', { key: 'no', type: 'button', className: 'wsbin-linkbtn', onClick: () => setConfirm(null) }, t('bin.confirmNo')),
           h('button', {
             key: 'yes',
             type: 'button',
@@ -789,25 +802,30 @@ window.__ModuleLoader__.load({
         h('div', { key: 'mask', className: 'wsbin-mask', onClick: () => binStore.set(false) }),
         h('div', { key: 'card', className: 'wsbin-dialog' }, [
           h('div', { key: 'head', className: 'wsbin-head' }, [
-            h('h2', { key: 'title', className: 'wsbin-title' }, t('bin.title')),
+            h('div', { key: 'main', className: 'wsbin-head-main' }, [
+              h('h2', { key: 'title', className: 'wsbin-title' }, t('bin.title')),
+              h('p', { key: 'hint', className: 'wsbin-hint' }, t('bin.timing')),
+            ]),
             h('button', { key: 'close', type: 'button', className: 'wsbin-close', 'aria-label': t('bin.close'), onClick: () => binStore.set(false) }, h(CloseIcon, null)),
           ]),
-          h('p', { key: 'timing', className: 'wsbin-muted', style: { margin: 0 } }, t('bin.timing')),
           listing.error === null ? null : h('p', { key: 'error', className: 'wsbin-error', role: 'alert' }, failureText(listing.error, t)),
           listing.broken.length === 0 ? null : h('p', { key: 'broken', className: 'wsbin-error' }, t('bin.broken', { count: listing.broken.length })),
           listing.loaded === false ? h('p', { key: 'loading', className: 'wsbin-muted' }, t('bin.loading')) : null,
-          listing.loaded === true && listing.items.length === 0 ? h('p', { key: 'empty', className: 'wsbin-muted' }, t('bin.empty')) : null,
-          h('div', { key: 'list', style: { display: 'flex', flexDirection: 'column', gap: '2px', maxHeight: '46vh', overflowY: 'auto', overscrollBehavior: 'contain' } }, rows),
+          listing.loaded === true && listing.items.length === 0 ? h('div', { key: 'empty', className: 'wsbin-empty' }, [
+            h('span', { key: 'icon', className: 'wsbin-empty-icon' }, h(TrashIcon, null)),
+            h('span', { key: 'text' }, t('bin.empty')),
+          ]) : null,
+          h('div', { key: 'list', className: 'wsbin-list' }, rows),
           confirmBar,
           h('div', { key: 'footer', className: 'wsbin-footer' }, [
             h('button', {
               key: 'clear',
               type: 'button',
-              className: 'wsbin-btn',
+              className: 'wsbin-linkbtn wsbin-linkbtn-danger',
               disabled: rowBusy !== null || listing.items.length === 0,
               onClick: () => setConfirm({ kind: 'all' }),
             }, rowBusy?.action === 'purge' && rowBusy.id === '*' ? t('bin.clearing') : t('bin.clear')),
-            h('button', { key: 'close', type: 'button', className: 'wsbin-btn', onClick: () => binStore.set(false) }, t('bin.close')),
+            h('button', { key: 'close', type: 'button', className: 'wsbin-linkbtn', onClick: () => binStore.set(false) }, t('bin.close')),
           ]),
         ]),
       ])
