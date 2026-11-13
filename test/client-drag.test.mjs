@@ -275,6 +275,29 @@ test('拖到页脚回收站：高亮，drop 打开回收确认而不是搬运', 
   assert.equal(trash.classList.contains('wsbin-trash-hover'), false, 'drop 后清除高亮')
 })
 
+test('运行中的会话跨区拖拽先弹确认，不直接 relocate', async () => {
+  const { exported, listeners } = await loadClient()
+  const ctx = fakeCtx()
+  ctx.get = (name) => (name === 'uiSession'
+    ? { sessionStatus: { getSnapshot: () => new Map([['session-1', { running: true }]]) } }
+    : undefined)
+  exported.apply(ctx)
+  const tree = makeNode()
+  const source = tree.append(makeGroup('ws-1', ['session-1']))
+  const target = tree.append(makeGroup('ws-2', ['session-2']))
+  let fetched = 0
+  globalThis.fetch = async () => { fetched += 1; return { ok: true, json: async () => ({ ok: true, value: {} }) } }
+  const event = events()
+  listeners.get('dragstart')(event.track('dragstart', source.children[1]))
+  listeners.get('dragover')(event.track('dragover', target.children[1]))
+  listeners.get('drop')(event.track('drop', target.children[1]))
+  await new Promise((settle) => setTimeout(settle, 0))
+  assert.equal(fetched, 0, '先不动手')
+  const pending = exported.__stores.moveRequestStore.get()
+  assert.equal(pending.sessionId, 'session-1')
+  assert.equal(pending.targetWorkspaceId, 'ws-2')
+})
+
 test('落在整棵列表上不接管', async () => {
   const { exported, listeners } = await loadClient()
   exported.apply(fakeCtx())

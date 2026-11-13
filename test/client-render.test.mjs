@@ -132,6 +132,41 @@ test('页脚按钮与回收站面板能渲染（空面板）', async () => {
   exported.__stores.requestStore.set(null)
 })
 
+test('运行中会话搬移确认框：点确认才发 relocate', async () => {
+  const exported = await loadClient()
+  const { ctx, calls } = fakeClientCtx()
+  const definitions = []
+  ctx.slots.register = (definition, component) => {
+    definitions.push({ definition, component })
+    calls.slots.push(definition)
+    return () => {}
+  }
+  exported.apply(ctx)
+  const byName = new Map(definitions.map((entry) => [entry.definition.name, entry.component]))
+  exported.__stores.moveRequestStore.set({
+    sessionId: 'session-1',
+    targetWorkspaceId: 'ws-2',
+    targetTitle: '目标工作区',
+    insertion: { workspaceId: 'ws-2', anchorId: null, side: 'after' },
+  })
+  const overlay = render(byName.get('shell.overlay')({ t: (key) => key }))
+  assert.equal(texts(overlay).includes('move.confirmTitle'), true)
+  assert.equal(texts(overlay).includes('move.confirmAction'), true)
+  const confirm = findByClass(overlay, 'wsbin-btn-danger')[0]
+  assert.notEqual(confirm, undefined)
+  const requests = []
+  globalThis.fetch = async (url, init) => {
+    requests.push(JSON.parse(init.body))
+    return { ok: true, json: async () => ({ ok: true, value: { applied: 'moved' } }) }
+  }
+  confirm.props.onClick()
+  await new Promise((settle) => setTimeout(settle, 0))
+  assert.equal(requests.length, 1)
+  assert.equal(requests[0].endpoint, 'relocate')
+  assert.deepEqual(requests[0].payload, { sessionId: 'session-1', targetWorkspaceId: 'ws-2' })
+  assert.equal(exported.__stores.moveRequestStore.get(), null)
+})
+
 test('会话菜单行能渲染并触发 requestDelete', async () => {
   const exported = await loadClient()
   const { ctx, calls } = fakeClientCtx()

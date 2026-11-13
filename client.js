@@ -291,6 +291,8 @@ window.__ModuleLoader__.load({
     const requestStore = createStore(null)
     /** 一次性结果提示，`{ text, error }` 或 null。 */
     const toastStore = createStore(null)
+    /** 正在运行的会话跨区搬移前，等用户确认「先停止」。 */
+    const moveRequestStore = createStore(null)
     /** 任何回收站动作之后 +1，让页脚计数与面板重新读。 */
     const revisionStore = createStore(0)
     /** 客户端 cordis 上下文；apply 时填，用来补官方的会话列表刷新。 */
@@ -443,6 +445,27 @@ window.__ModuleLoader__.load({
       if (typeof direct === 'string') return direct
       const viaDataset = node.dataset?.rowKey ?? node.dataset?.rowkey
       return typeof viaDataset === 'string' ? viaDataset : null
+    }
+
+    /** 会话是不是正在跑（官方 uiSession 状态；拿不到按未运行处理，Host 还会兜底）。 */
+    function isSessionRunning(ctx, sessionId) {
+      try {
+        const status = ctx?.get?.('uiSession')?.sessionStatus?.getSnapshot?.()?.get?.(sessionId)
+        return status?.running === true
+      } catch {
+        return false
+      }
+    }
+
+    /** 目标分组的标题（用于确认框），拿不到就空串。 */
+    function workspaceTitleOf(groupNode) {
+      try {
+        const row = groupNode?.querySelector?.('[data-row-key^="workspace:"]')
+        const text = row?.innerText ?? row?.textContent ?? ''
+        return typeof text === 'string' ? text.split('\n')[0].trim() : ''
+      } catch {
+        return ''
+      }
     }
 
     /** 从事件目标向上找到会话行，返回 sessionId；不是会话行就 null。 */
@@ -652,8 +675,14 @@ window.__ModuleLoader__.load({
         event.stopPropagation()
         const { sessionId, insertion } = dragging
         const targetWorkspaceId = group.workspaceId
+        const targetTitle = workspaceTitleOf(group.node)
         reset()
-        void moveSession(ctx, t, sessionId, targetWorkspaceId, insertion)
+        if (isSessionRunning(ctx, sessionId)) {
+          // 运行中的会话：先弹确认，确认后再停活搬运。
+          moveRequestStore.set({ sessionId, targetWorkspaceId, targetTitle, insertion })
+        } else {
+          void moveSession(ctx, t, sessionId, targetWorkspaceId, insertion)
+        }
       }
 
       const onDragLeave = (event) => {
@@ -739,10 +768,11 @@ window.__ModuleLoader__.load({
     }
 
     /** 调一次 Host 的 relocate，并把结果变成提示。 */
-    async function moveSession(ctx, t, sessionId, targetWorkspaceId, insertion) {
+    async function moveSession(ctx, t, sessionId, targetWorkspaceId, insertion, options = {}) {
       const result = await callHost('relocate', { sessionId, targetWorkspaceId })
       if (result.ok === true) {
-        if (result.value?.stoppedRunning === true) toastStore.set({ text: t('toast.stoppedRunning') })
+        // 确认框已经说明过「先停止」时不再补 toast；拿不到运行状态、没弹确认时才提示。
+        if (result.value?.stoppedRunning === true && options.confirmed !== true) toastStore.set({ text: t('toast.stoppedRunning') })
         applyInsertion(ctx, sessionId, insertion)
         bump()
         refreshSessions()
@@ -782,6 +812,7 @@ window.__ModuleLoader__.load({
     function WorkspaceBinOverlay({ t }) {
       const PAGE_SIZE = 40
       const request = useStoreValue(requestStore)
+      const moveRequest = useStoreValue(moveRequestStore)
       const open = useStoreValue(binStore)
       const toast = useStoreValue(toastStore)
       const revision = useStoreValue(revisionStore)
@@ -917,6 +948,29 @@ window.__ModuleLoader__.load({
       }
       const described = describeRequest()
 
+      const confirmMove = () => {
+        const pending = moveRequest
+        if (pending === null) return
+        moveRequestStore.set(null)
+        void moveSession(clientCtx, t, pending.sessionId, pending.targetWorkspaceId, pending.insertion, { confirmed: true })
+      }
+
+      const moveDialog = moveRequest === null ? null : h('div', { className: 'wsbin-modal', role: 'dialog', 'aria-modal': 'true' }, [
+        h('div', { key: 'mask', className: 'wsbin-mask', onClick: () => moveRequestStore.set(null) }),
+        h('div', { key: 'card', className: 'wsbin-dialog' }, [
+          h('div', { key: 'head', className: 'wsbin-head' }, [
+            h('h2', { key: 'title', className: 'wsbin-title' }, t('move.confirmTitle')),
+            h('button', { key: 'close', type: 'button', className: 'wsbin-close', 'aria-label': t('dialog.close'), onClick: () => moveRequestStore.set(null) }, h(CloseIcon, null)),
+          ]),
+          h('p', { key: 'desc', className: 'wsbin-desc' }, t('move.confirmBody')),
+          moveRequest.targetTitle === '' ? null : h('p', { key: 'target', className: 'wsbin-muted' }, t('move.confirmTarget', { target: moveRequest.targetTitle })),
+          h('div', { key: 'footer', className: 'wsbin-footer' }, [
+            h('button', { key: 'cancel', type: 'button', className: 'wsbin-btn', onClick: () => moveRequestStore.set(null) }, t('dialog.cancel')),
+            h('button', { key: 'confirm', type: 'button', className: 'wsbin-btn wsbin-btn-danger', onClick: confirmMove }, t('move.confirmAction')),
+          ]),
+        ]),
+      ])
+
       const dialog = request === null ? null : h('div', { className: 'wsbin-modal', role: 'dialog', 'aria-modal': 'true' }, [
         h('div', { key: 'mask', className: 'wsbin-mask', onClick: () => (busy ? undefined : requestStore.set(null)) }),
         h('div', { key: 'card', className: 'wsbin-dialog' }, [
@@ -939,7 +993,7 @@ window.__ModuleLoader__.load({
           h('div', { key: 'footer', className: 'wsbin-footer' }, [
             h('button', { key: 'cancel', type: 'button', className: 'wsbin-btn', disabled: busy, onClick: () => requestStore.set(null) }, t('dialog.cancel')),
             h('button', { key: 'confirm', type: 'button', className: 'wsbin-btn wsbin-btn-danger', disabled: busy || plan === null, onClick: confirmDelete },
-              busy ? t('dialog.deleting') : t('dialog.confirm')),
+              busy ? t('dialog.deleting') : plan?.running === true ? t('dialog.confirmRunning') : t('dialog.confirm')),
           ]),
         ]),
       ])
@@ -1028,7 +1082,7 @@ window.__ModuleLoader__.load({
         ]),
       ])
 
-      return h(React.Fragment, null, dialog, panel, toast === null ? null : h('div', {
+      return h(React.Fragment, null, dialog, moveDialog, panel, toast === null ? null : h('div', {
         className: toast.error === true ? 'wsbin-toast wsbin-toast-error' : 'wsbin-toast',
         role: 'status',
       }, toast.text))
@@ -1085,7 +1139,7 @@ window.__ModuleLoader__.load({
       inject,
       apply,
       formatBytes,
-      __stores: { binStore, requestStore, toastStore, revisionStore },
+      __stores: { binStore, requestStore, moveRequestStore, toastStore, revisionStore },
       __drag: { sessionIdOfNode, workspaceGroupOf },
       __sync: { refreshSessions, closeOpenSession },
     }
