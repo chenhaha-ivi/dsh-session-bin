@@ -4,6 +4,20 @@
 版本号也重新起算；旧包 0.1.x ~ 0.4.x 的记录原样保留在最后一节「旧包」里。
 更细的逐次改动看 `git log`，内部实现与验证记录见 [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md)。
 
+## 未发布
+
+### 新增
+
+- 插件配置可视化：侧栏 **Plugins** → **dsh-session-bin** 详情页新增「回收站设置」，
+  可以直接勾选「删除工作区时把本地文件夹放进系统回收站」，不用再去手改 `cordis.patch.yml`。
+  写入走 DSH 的 configEditor（仍然落在 profile 的 patch 里），只提交这一个开关；
+  `home` 只显示最终的回收站根目录，不给输入框。保存后重启 DSH 生效；profile 没有 configEditor
+  或这一行没启用时，页面会说明原因并让你回去改 YAML。
+- Host 路由 `/api/session-bin` 增加 `config` / `config-save` 两个端点；配置仍由插件的 `Config`
+  schema 校验，未知键和类型错误照旧拒绝。
+
+
+
 ## 0.1.0 — 2026-11-13（dsh-session-bin 首个版本）
 
 ### 发布

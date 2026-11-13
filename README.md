@@ -54,7 +54,13 @@ pnpm add link:<仓库根目录>      # 例如 ~/Documents/dsh-session-bin
 ## 可选：删工作区时把本地文件夹放进系统回收站
 
 这个能力**默认关闭**，保持 DSH 官方语义：只移除工作区登记，文件夹和会话都保留。
-要开启，在 profile 的 `cordis.patch.yml` 里给插件行加配置：
+
+**界面里改（推荐）**：侧栏 **Plugins** → 已安装插件里的 **dsh-session-bin** → 详情页的
+「回收站设置」，勾选「删除工作区时，把本地文件夹放进系统回收站」再保存。
+页面只提交这一个开关；写入仍由 DSH 的 configEditor 落到 profile 的 `cordis.patch.yml`，
+保存后需要重启 DSH 生效。`home` 在页面里只显示「回收站根目录」，不提供输入框——改错会让回收站换位置。
+
+**手动改**：在 profile 的 `cordis.patch.yml` 里给插件行加配置（和界面写入的是同一处）：
 
 ```yaml
 # ~/.dsh/profiles/desktop/cordis.patch.yml

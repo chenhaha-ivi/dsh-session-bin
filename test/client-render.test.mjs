@@ -183,6 +183,24 @@ test('所有字面量 t(...) 都有中英词条（防再出现原始 key）', as
   }
 })
 
+test('配置页能渲染：加载态就有标题和说明，不白屏', async () => {
+  const exported = await loadClient()
+  const { ctx, calls } = fakeClientCtx()
+  const definitions = []
+  ctx.slots.register = (definition, component) => {
+    definitions.push({ definition, component })
+    calls.slots.push(definition)
+    return () => {}
+  }
+  exported.apply(ctx)
+  const slot = definitions.find((entry) => entry.definition.name === 'plugins.bundle.config')
+  assert.notEqual(slot, undefined)
+  const tree = render(slot.component({ t: (key) => key, view: 'page' }))
+  assert.equal(findByClass(tree, 'sbin-config').length, 1)
+  assert.equal(texts(tree).includes('config.title'), true)
+  assert.equal(texts(tree).includes('config.loading'), true)
+})
+
 test('会话菜单行能渲染并触发 requestDelete', async () => {
   const exported = await loadClient()
   const { ctx, calls } = fakeClientCtx()

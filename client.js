@@ -84,6 +84,20 @@ window.__ModuleLoader__.load({
       'bin.confirmClear': '清空回收站里的全部 {count} 个条目？无法恢复。',
       'bin.confirmYes': '确认删除',
       'bin.confirmNo': '再想想',
+      'config.title': '回收站设置',
+      'config.hint': '这些值写在 profile 的 cordis.patch.yml 里；界面只是帮你改它。',
+      'config.trashWorkspaceFolder': '删除工作区时，把本地文件夹放进系统回收站',
+      'config.trashWorkspaceFolderHint': '默认关闭：官方「删除工作区」只移除登记，文件夹和会话都保留。开启后文件夹进废纸篓，DSH home、会话根、当前目录会跳过。',
+      'config.homeValue': '回收站根目录：{path}',
+      'config.homeHint': '要改 DSH home，请直接编辑 profile 的 cordis.patch.yml（改错会让回收站换位置）。',
+      'config.save': '保存',
+      'config.saving': '正在保存…',
+      'config.saved': '已保存。重启 DSH 后生效。',
+      'config.restart': '插件在启动时读取这些配置，改完需要重启 DSH。',
+      'config.loading': '正在读取配置…',
+      'config.unavailable': '这个 profile 没有配置编辑器，没法在界面里改；请直接编辑 profile 的 cordis.patch.yml。',
+      'config.noEntry': '这一行没在 profile 里启用，找不到可写的配置行；先启用插件再回来。',
+      'config.failed': '读取配置失败：{message}',
       'error.unknown-workspace': '这个工作区已经不在注册表里了。',
       'error.caller-session': '不能删除正在执行这次操作的工作区。',
       'error.no-sessions-root': '定位不到会话存储根目录，为安全起见拒绝操作。',
@@ -160,6 +174,20 @@ window.__ModuleLoader__.load({
       'bin.confirmClear': 'Empty all {count} entr(ies) in the recycle bin? This cannot be undone.',
       'bin.confirmYes': 'Delete permanently',
       'bin.confirmNo': 'Keep them',
+      'config.title': 'Recycle Bin settings',
+      'config.hint': 'These values live in the profile\'s cordis.patch.yml; this page just edits them for you.',
+      'config.trashWorkspaceFolder': 'Send the folder to the system trash when a workspace is deleted',
+      'config.trashWorkspaceFolderHint': 'Off by default: the official delete only removes the registration and keeps the folder and sessions. When on, the folder goes to the trash; the DSH home, session root and current directory are skipped.',
+      'config.homeValue': 'Recycle bin root: {path}',
+      'config.homeHint': 'To change the DSH home, edit the profile\'s cordis.patch.yml directly (a wrong value moves the recycle bin).',
+      'config.save': 'Save',
+      'config.saving': 'Saving…',
+      'config.saved': 'Saved. Restart DSH to apply.',
+      'config.restart': 'These settings are read when the plugin starts, so a restart is required.',
+      'config.loading': 'Reading configuration…',
+      'config.unavailable': 'This profile has no configuration editor, so it cannot be edited here; edit the profile\'s cordis.patch.yml instead.',
+      'config.noEntry': 'This row is not enabled in the profile, so there is no configuration row to write; enable the plugin first.',
+      'config.failed': 'Reading configuration failed: {message}',
       'error.unknown-workspace': 'That workspace is no longer in the registry.',
       'error.caller-session': 'The workspace running this operation cannot delete itself.',
       'error.no-sessions-root': 'The session storage root could not be located, so the operation was refused.',
@@ -216,6 +244,8 @@ window.__ModuleLoader__.load({
       'session-bin/read-failed': 'error.read-failed',
       'session-bin/no-persistence': 'error.no-persistence',
       'session-bin/no-home': 'error.no-home',
+      'session-bin/no-config-editor': 'config.unavailable',
+      'session-bin/no-config-entry': 'config.noEntry',
       'session-bin/unaccounted-data': 'error.unaccounted-data',
       'session-bin/project-changed': 'error.project-changed',
     }
@@ -244,6 +274,8 @@ window.__ModuleLoader__.load({
 .sbin-btn:disabled { opacity: .4; cursor: not-allowed; }
 .sbin-btn-danger { background: var(--dsw-alias-state-error-primary, #e5484d); color: #fff; }
 .sbin-btn-danger:hover:not(:disabled) { filter: brightness(1.07); background: var(--dsw-alias-state-error-primary, #e5484d); }
+.sbin-btn-primary { background: var(--dsw-alias-state-business-primary, #4c9aff); color: #fff; }
+.sbin-btn-primary:hover:not(:disabled) { filter: brightness(1.07); background: var(--dsw-alias-state-business-primary, #4c9aff); }
 .sbin-modal { pointer-events: auto; position: fixed; inset: 0; z-index: 1000; display: flex; align-items: center; justify-content: center;
   padding: max(24px, var(--dsh-frame-overlay-top, 24px)) 24px; }
 .sbin-mask { position: absolute; inset: var(--dsh-frame-chrome-top, 0px) 0 0; background: var(--dsw-alias-bg-mask-1, rgba(0,0,0,.45)); }
@@ -319,6 +351,19 @@ window.__ModuleLoader__.load({
 .sbin-confirm { display: flex; flex-direction: column; gap: 10px; padding: 12px 14px; border-radius: 10px;
   border: .5px solid var(--dsw-alias-state-error-primary, #e5484d);
   background: var(--dsw-alias-state-error-primary-a08, rgba(229,72,77,.08)); }
+/* 插件配置页（Plugins → dsh-session-bin 的「配置」区）：跟详情页其它 section 一样，
+ * 不自带卡片，只用标题/说明/控件三层，间距靠父级。 */
+.sbin-config { display: flex; flex-direction: column; gap: 10px; padding: 2px 0 4px; }
+.sbin-config-title { margin: 0; font-size: 14px; font-weight: 500; color: var(--dsw-alias-label-primary, #f5f5f5); }
+.sbin-config-hint { margin: 0; font-size: 12px; line-height: 18px; color: var(--dsw-alias-label-tertiary, #9a9aa2); }
+.sbin-config-row { display: flex; align-items: flex-start; gap: 10px; cursor: pointer; }
+.sbin-config-row input { flex: none; margin: 3px 0 0; accent-color: var(--dsw-alias-state-business-primary, #4c9aff); }
+.sbin-config-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.sbin-config-label { font-size: 13px; line-height: 20px; color: var(--dsw-alias-label-primary, #f5f5f5); }
+.sbin-config-sub { margin: 0; font-size: 12px; line-height: 18px; color: var(--dsw-alias-label-tertiary, #9a9aa2); word-break: break-all; }
+.sbin-config-actions { display: flex; align-items: center; gap: 10px; }
+.sbin-config-note { margin: 0; font-size: 12px; line-height: 18px; color: var(--dsw-alias-state-business-primary, #4c9aff); }
+.sbin-config-note-error { color: var(--dsw-alias-state-error-primary, #e5484d); }
 `
 
     /** 最小外部 store：一个值 + 同步通知。 */
@@ -1193,6 +1238,119 @@ window.__ModuleLoader__.load({
       }, toast.text))
     }
 
+    /**
+     * 插件配置页：注册进 `plugins.bundle.config`，渲染在 Plugins → dsh-session-bin
+     * 的详情页里。只跟自己的 Host 路由说话（`config` / `config-save`），
+     * 由 Host 侧的 configEditor 负责写 profile —— 界面不碰 YAML。
+     *
+     * 只有 `trashWorkspaceFolder` 可改；`home` 显示为只读的回收站根目录，
+     * 避免手滑把回收站搬到别处。
+     */
+    function ConfigSection({ t }) {
+      const [state, setState] = React.useState({ status: 'loading' })
+      const [draft, setDraft] = React.useState(false)
+      const [saving, setSaving] = React.useState(false)
+      const [notice, setNotice] = React.useState(null)
+
+      React.useEffect(() => {
+        let cancelled = false
+        callHost('config', {}).then((result) => {
+          if (cancelled === true) return
+          if (result.ok !== true) {
+            setState({ status: 'failed', message: result.message ?? '' })
+            return
+          }
+          const value = result.value !== null && typeof result.value === 'object' ? result.value : {}
+          setState({
+            status: value.available === true ? 'ready' : 'unavailable',
+            reason: typeof value.reason === 'string' ? value.reason : null,
+            config: value.config !== null && typeof value.config === 'object' ? value.config : {},
+            home: typeof value.home === 'string' ? value.home : '',
+          })
+          setDraft(value.config?.trashWorkspaceFolder === true)
+        })
+        return () => {
+          cancelled = true
+        }
+      }, [])
+
+      const ready = state.status === 'ready'
+      const enabled = state.config?.trashWorkspaceFolder === true
+      const dirty = ready && draft !== enabled
+      const unavailableText = state.reason === 'no-entry' ? t('config.noEntry') : t('config.unavailable')
+
+      /** 保存：只提交开关；Host 合并当前配置并校验后再写 profile。 */
+      const save = async () => {
+        setSaving(true)
+        setNotice(null)
+        const result = await callHost('config-save', { config: { trashWorkspaceFolder: draft } })
+        setSaving(false)
+        if (result.ok !== true) {
+          setNotice({ error: true, text: failureText(result, t) })
+          return
+        }
+        const value = result.value !== null && typeof result.value === 'object' ? result.value : {}
+        setState({
+          status: 'ready',
+          reason: null,
+          config: value.config !== null && typeof value.config === 'object' ? value.config : {},
+          home: typeof value.home === 'string' ? value.home : '',
+        })
+        setNotice({ error: false, text: t('config.saved') })
+      }
+
+      const body = []
+      if (state.status === 'loading') {
+        body.push(h('p', { key: 'loading', className: 'sbin-config-sub' }, t('config.loading')))
+      } else if (state.status === 'failed') {
+        body.push(h('p', { key: 'failed', className: 'sbin-config-sub sbin-config-note-error' }, t('config.failed', { message: state.message })))
+      } else if (state.status === 'unavailable') {
+        body.push(h('p', { key: 'unavailable', className: 'sbin-config-sub' }, unavailableText))
+      } else {
+        body.push(h('label', { key: 'toggle', className: 'sbin-config-row' }, [
+          h('input', {
+            key: 'box',
+            type: 'checkbox',
+            checked: draft,
+            disabled: saving,
+            onChange: (event) => {
+              setNotice(null)
+              setDraft(event.target.checked === true)
+            },
+          }),
+          h('span', { key: 'text', className: 'sbin-config-text' }, [
+            h('span', { key: 'label', className: 'sbin-config-label' }, t('config.trashWorkspaceFolder')),
+            h('span', { key: 'hint', className: 'sbin-config-sub' }, t('config.trashWorkspaceFolderHint')),
+          ]),
+        ]))
+        if (state.home !== '') {
+          body.push(h('p', { key: 'home', className: 'sbin-config-sub' }, t('config.homeValue', { path: state.home })))
+        }
+        body.push(h('p', { key: 'home-hint', className: 'sbin-config-sub' }, t('config.homeHint')))
+        body.push(h('p', { key: 'restart', className: 'sbin-config-sub' }, t('config.restart')))
+        body.push(h('div', { key: 'actions', className: 'sbin-config-actions' }, [
+          h('button', {
+            key: 'save',
+            type: 'button',
+            className: 'sbin-btn sbin-btn-primary',
+            disabled: saving || dirty === false,
+            onClick: save,
+          }, saving ? t('config.saving') : t('config.save')),
+          notice === null ? null : h('p', {
+            key: 'notice',
+            className: notice.error === true ? 'sbin-config-note sbin-config-note-error' : 'sbin-config-note',
+            role: notice.error === true ? 'alert' : 'status',
+          }, notice.text),
+        ]))
+      }
+
+      return h('section', { className: 'sbin-config', 'aria-label': t('config.title') }, [
+        h('h3', { key: 'title', className: 'sbin-config-title' }, t('config.title')),
+        h('p', { key: 'hint', className: 'sbin-config-hint' }, t('config.hint')),
+        ...body,
+      ])
+    }
+
     /** Client 服务：`slots`（槽位）与 `locale`（文案）。 */
     const inject = ['slots', 'locale']
 
@@ -1236,6 +1394,14 @@ window.__ModuleLoader__.load({
         locale: NS,
         inject: () => ({}),
       }, SessionBinOverlay))
+
+      // 可视化配置：渲染在 Plugins → dsh-session-bin 的详情页（bundle.config 按包名 keyed）。
+      ctx.slots.inject('plugins.bundle.config', () => ctx.slots.register({
+        name: 'plugins.bundle.config',
+        key: 'dsh-session-bin',
+        locale: NS,
+        inject: () => ({}),
+      }, ConfigSection))
     }
 
     // `__stores` 只给单测用：Node 里没有 React 渲染器，测试靠它把面板打开再渲染。

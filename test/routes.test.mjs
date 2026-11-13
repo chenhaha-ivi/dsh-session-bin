@@ -38,6 +38,21 @@ function fakeOps(overrides = {}) {
       calls.push(['relocate', request])
       return { sessionId: request.sessionId, applied: 'moved' }
     },
+    readConfig: () => ({
+      available: true,
+      reason: null,
+      config: { trashWorkspaceFolder: false },
+      home: '/tmp/dsh-home',
+    }),
+    saveConfig: async (patch) => {
+      calls.push(['saveConfig', patch])
+      return {
+        available: true,
+        saved: true,
+        config: { trashWorkspaceFolder: patch?.trashWorkspaceFolder === true },
+        home: '/tmp/dsh-home',
+      }
+    },
     ...overrides,
   }
 }
@@ -132,4 +147,41 @@ test('BinError 走信封，未知异常折叠成 failed', async () => {
   })), { endpoint: 'list' })).json()
   assert.equal(second.error.code, 'session-bin/failed')
   assert.equal(second.error.message, 'boom')
+})
+
+test('config 端点只读当前配置', async () => {
+  const ops = fakeOps()
+  const body = await (await post(createRouteHandler(ops), { endpoint: 'config', payload: {} })).json()
+  assert.equal(body.ok, true)
+  assert.deepEqual(body.value, {
+    available: true,
+    reason: null,
+    config: { trashWorkspaceFolder: false },
+    home: '/tmp/dsh-home',
+  })
+  assert.deepEqual(ops.calls, [])
+})
+
+test('config-save 把 payload.config 原样交给门面，拒绝走信封', async () => {
+  const ops = fakeOps()
+  const body = await (await post(createRouteHandler(ops), {
+    endpoint: 'config-save',
+    payload: { config: { trashWorkspaceFolder: true } },
+  })).json()
+  assert.equal(body.ok, true)
+  assert.equal(body.value.saved, true)
+  assert.deepEqual(body.value.config, { trashWorkspaceFolder: true })
+  assert.deepEqual(ops.calls, [['saveConfig', { trashWorkspaceFolder: true }]])
+
+  const refused = fakeOps({
+    saveConfig: async () => {
+      throw new BinError('session-bin/invalid-config', 'unknown config key: nope')
+    },
+  })
+  const failure = await (await post(createRouteHandler(refused), {
+    endpoint: 'config-save',
+    payload: { config: { nope: 1 } },
+  })).json()
+  assert.equal(failure.ok, false)
+  assert.equal(failure.error.code, 'session-bin/invalid-config')
 })

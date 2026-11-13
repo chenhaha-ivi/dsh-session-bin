@@ -1,7 +1,7 @@
 /**
  * `/api/session-bin` 的请求分发。
  *
- * 一个精确路由，六种端点，统一信封：
+ * 一个精确路由，八种端点（含配置读写），统一信封：
  *   请求 `{ endpoint, payload }`；成功 `{ ok: true, value }`；
  *   失败 `{ ok: false, error: { code, message, details } }`。
  * 只有「请求体不是 JSON / 不是对象」回 400，其余业务失败都走 200 + 信封，
@@ -99,6 +99,12 @@ async function handle(ops, endpoint, payload) {
       targetPath: payload.targetPath,
       callerSessionId: payload.callerSessionId,
     }))
+  }
+  if (endpoint === 'config') {
+    return ok(ops.readConfig())
+  }
+  if (endpoint === 'config-save') {
+    return ok(await ops.saveConfig(payload.config))
   }
   if (endpoint === 'list') {
     return ok(await ops.list())

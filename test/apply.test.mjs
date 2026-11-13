@@ -5,14 +5,14 @@ import { apply, Config, inject, name, ROUTE, resolveHome } from '../src/host/ind
 import { createFakeRegistry, makeWorld } from './support/world.mjs'
 
 /** 与 Connection.fetch.register 的约定同形的假 ctx。 */
-function fakeCtx(world, registrations) {
+function fakeCtx(world, registrations, services = {}) {
   const effects = []
   return {
     effects,
     sessionPersistence: { root: world.sessionsRoot },
     workspaceRegistry: world.registry,
     logger: { info() {}, warn() {}, debug() {}, error() {} },
-    get: (service) => (service === 'sessions' ? world.sessions : undefined),
+    get: (service) => (service === 'sessions' ? world.sessions : services[service]),
     on(name) {
       this.listeners.push(name)
       return () => {}
@@ -83,6 +83,45 @@ test('apply 挂一个精确 POST 路由，并注册可拆的 effect', async () =
       'session-bin: OS trash watcher',
       'session-bin: fetch route',
     ])
+  } finally {
+    const { dispose } = await import('./helpers.mjs')
+    await dispose(world.home)
+  }
+})
+
+test('配置页的 Host 半边：读写都经 configEditor，插件不碰 profile 文件', async () => {
+  const world = await makeWorld({ sessionIds: [] })
+  try {
+    const edits = []
+    const entry = { options: { id: 'session-bin', name: 'dsh-session-bin', config: {} } }
+    const editor = {
+      entries: () => [entry],
+      edit: async (target, change) => {
+        const next = change(target.options.config, {})
+        target.options.config = next
+        edits.push(next)
+      },
+    }
+    const registrations = []
+    const ctx = fakeCtx(world, registrations, { configEditor: editor })
+    apply(ctx, { home: world.home })
+    const route = registrations[0]
+    const send = (body) => route.fetch(new Request('http://localhost' + ROUTE, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(body),
+    }))
+
+    const read = await (await send({ endpoint: 'config', payload: {} })).json()
+    assert.equal(read.ok, true)
+    assert.equal(read.value.available, true)
+    assert.deepEqual(read.value.config, { trashWorkspaceFolder: false })
+    assert.equal(read.value.home, resolveHome({}))
+
+    const saved = await (await send({ endpoint: 'config-save', payload: { config: { trashWorkspaceFolder: true } } })).json()
+    assert.equal(saved.ok, true)
+    assert.equal(saved.value.saved, true)
+    assert.deepEqual(edits, [{ trashWorkspaceFolder: true }])
   } finally {
     const { dispose } = await import('./helpers.mjs')
     await dispose(world.home)

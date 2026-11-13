@@ -6,7 +6,7 @@
  * 这样即使 profile 的 node_modules 布局变了，插件也能加载。
  *
  * 激活时只做两件事：
- *   1. 挂一个精确路由 `/api/session-bin`（六个端点，见 routes.js）；
+ *   1. 挂一个精确路由 `/api/session-bin`（八个端点，见 routes.js）；
  *   2. 跑一次启动恢复（回收站里 `planned` 的条目收敛，**绝不自动删字节**）。
  *
  * @module dsh-session-bin
@@ -20,6 +20,7 @@ import { createWorkspaceOps } from './workspace.js'
 import { createSessionOps } from './session.js'
 import { createMoveOps } from './move.js'
 import { createRouteHandler } from './routes.js'
+import { createConfigOps } from './config.js'
 import { createWorkspaceFolderWatcher } from './workspace-watch.js'
 import { trashPathToOs } from './os-trash.js'
 
@@ -139,6 +140,13 @@ export function apply(ctx, config) {
     restoreSession: sessions.restoreSession,
     suppressFolderTrash: (workspaceId) => folderWatcher.suppress(workspaceId),
   })
+  // profile 里这一行的配置：只经 configEditor 读写，插件不自己解析 cordis.patch.yml。
+  const configOps = createConfigOps({
+    ctx,
+    validate: (value) => Config['~standard'].validate(value),
+    resolveHome,
+  })
+
   // 路由只认一个门面：plan/move 按 payload 里有没有 sessionId 分流，restore 按 manifest.kind 分流。
   const ops = {
     survey: (payload) => (typeof payload?.sessionId === 'string' && payload.sessionId.trim() !== ''
@@ -151,6 +159,9 @@ export function apply(ctx, config) {
     recover: workspaces.recover,
     relocate: moves.relocateSession,
     recoverMoves: moves.recoverMoves,
+    // 可视化配置页：读 profile 里这一行的 config，写交给 configEditor（插件自己不碰 YAML）。
+    readConfig: () => configOps.read(),
+    saveConfig: (patch) => configOps.save(patch),
   }
 
   // 一个精确路由；用 effect 包住，插件卸载时随 fiber 一起拆掉。
