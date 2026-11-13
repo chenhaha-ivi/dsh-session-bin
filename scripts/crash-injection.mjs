@@ -9,11 +9,12 @@ import assert from 'node:assert/strict'
 import { spawn } from 'node:child_process'
 import { readdir, stat } from 'node:fs/promises'
 import { join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { createBin } from '../src/host/trash.js'
 import { dispose, tempHome } from '../test/helpers.mjs'
 import { makeWorld } from '../test/support/world.mjs'
 
-const WORKER = new URL('./crash-worker.mjs', import.meta.url).pathname
+const WORKER = fileURLToPath(new URL('./crash-worker.mjs', import.meta.url))
 
 // SIGKILL 在 Windows 上没有等价语义；Windows 的常规回归由 CI 跑单测 + 三个 e2e。
 if (process.platform === 'win32') {

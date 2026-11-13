@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { join } from 'node:path'
+import { join, resolve } from 'node:path'
 import { apply, Config, inject, name, ROUTE, resolveHome } from '../src/host/index.js'
 import { createFakeRegistry, makeWorld } from './support/world.mjs'
 
@@ -109,8 +109,9 @@ test('resolveHome：配置 > DSH_HOME > ~/.dsh', () => {
   const previous = process.env.DSH_HOME
   try {
     process.env.DSH_HOME = '/tmp/dsh-home-test'
-    assert.equal(resolveHome({ home: '/custom/home' }), '/custom/home')
-    assert.equal(resolveHome({}), '/tmp/dsh-home-test')
+    // Windows 上 resolve('/custom/home') 会带盘符，期望值也必须走 resolve。
+    assert.equal(resolveHome({ home: '/custom/home' }), resolve('/custom/home'))
+    assert.equal(resolveHome({}), resolve('/tmp/dsh-home-test'))
     process.env.DSH_HOME = ''
     assert.equal(resolveHome(undefined).endsWith(join('.dsh')), true)
   } finally {

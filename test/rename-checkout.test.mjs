@@ -8,7 +8,7 @@ import { fileURLToPath } from 'node:url'
 
 const run = promisify(execFile)
 const script = fileURLToPath(new URL('../scripts/rename-checkout.mjs', import.meta.url))
-const base = new URL('../.test-tmp/rename-checkout-', import.meta.url).pathname + Math.random().toString(16).slice(2, 8)
+const base = fileURLToPath(new URL('../.test-tmp/rename-checkout-', import.meta.url)) + Math.random().toString(16).slice(2, 8)
 
 async function exists(path) {
   try {
