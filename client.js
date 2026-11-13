@@ -503,6 +503,20 @@ window.__ModuleLoader__.load({
         if (highlighted !== null && highlighted.classList !== undefined) highlighted.classList.remove('wsbin-drop-target')
         highlighted = null
       }
+      /**
+       * 清掉官方残留的蓝色插入线：官方只在自己的分组里画 marker，指针移出分组后
+       * 它不会主动清 `drag.over`，所以拖到别的工作区时源分组可能还挂着那条线。
+       * 只删形如 `*dropBefore` / `*dropAfter` 的类名，不碰我们自己的 `wsbin-drop-*`。
+       */
+      const clearNativeMarker = () => {
+        if (typeof document.querySelectorAll !== 'function') return
+        for (const node of document.querySelectorAll('[class*="dropBefore"], [class*="dropAfter"]')) {
+          if (node.classList === undefined || typeof node.classList.remove !== 'function') continue
+          for (const token of [...node.classList]) {
+            if (/drop(Before|After)$/.test(token)) node.classList.remove(token)
+          }
+        }
+      }
       const clearLine = () => {
         if (lineAnchor !== null && lineAnchor.classList !== undefined) {
           lineAnchor.classList.remove('wsbin-drop-before')
@@ -550,12 +564,15 @@ window.__ModuleLoader__.load({
         if (group === null || group.workspaceId === dragging.sourceWorkspaceId) {
           clearHighlight()
           clearLine()
+          // 指针离开所有分组时，官方那条线也该消失；自己分组内保留（官方组内排序要用）。
+          if (group === null) clearNativeMarker()
           return
         }
         event.preventDefault()
         event.stopPropagation()
         if (event.dataTransfer !== null && event.dataTransfer !== undefined) event.dataTransfer.dropEffect = 'move'
         setHighlight(group.node)
+        clearNativeMarker()
         // 官方只在自己的分组里画蓝色插入线；跨组时我们自己复刻一条。
         const row = typeof event.target?.closest === 'function' ? event.target.closest('[data-row-key^="session:"]') : null
         const owns = typeof group.node.contains === 'function' ? group.node.contains(row) : row !== null
