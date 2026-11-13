@@ -116,7 +116,7 @@ test('槽位注册齐全：菜单图标、页脚、overlay', async () => {
   assert.equal(calls.slots.length, 3)
   assert.equal(calls.locales.length, 1)
   assert.equal(calls.locales[0].namespace, 'workspaceBin')
-  assert.equal(typeof calls.locales[0].dictionaries.zh['menu.deleteSession'], 'string')
+  assert.equal(calls.locales[0].dictionaries.zh['menu.deleteSession'], '回收会话')
   assert.equal(typeof calls.locales[0].dictionaries.zh['dialog.descSession'], 'string')
   assert.equal(typeof calls.locales[0].dictionaries.en['menu.deleteSession'], 'string')
   assert.equal(calls.effects.includes('workspace-bin: styles'), true)

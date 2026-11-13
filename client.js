@@ -38,7 +38,7 @@ window.__ModuleLoader__.load({
     const ROUTE = '/api/workspace-bin'.slice(1)
 
     const ZH = {
-      'menu.deleteSession': '删除会话',
+      'menu.deleteSession': '回收会话',
       'dialog.title': '删除到回收站',
       'dialog.close': '关闭',
       'dialog.descSession': '「{title}」这个会话会移入回收站，文件不会立刻删除；随时可以恢复。',
@@ -96,7 +96,7 @@ window.__ModuleLoader__.load({
     }
 
     const EN = {
-      'menu.deleteSession': 'Delete session',
+      'menu.deleteSession': 'Recycle session',
       'dialog.title': 'Move to Recycle Bin',
       'dialog.close': 'Close',
       'dialog.descSession': '"{title}" moves to the recycle bin. Its files are kept and it can be restored at any time.',
