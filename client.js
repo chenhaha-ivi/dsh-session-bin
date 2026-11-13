@@ -74,12 +74,6 @@ window.__ModuleLoader__.load({
       'bin.confirmClear': '清空回收站里的全部 {count} 个条目？无法恢复。',
       'bin.confirmYes': '确认删除',
       'bin.confirmNo': '再想想',
-      'toast.moved': '已把「{title}」放入回收站',
-      'toast.moving': '正在移动会话…',
-      'toast.movedTo': '会话已移到目标工作区',
-      'toast.restored': '已恢复「{title}」',
-      'toast.purged': '已永久删除 {count} 个条目',
-      'toast.cleared': '回收站已清空',
       'error.unknown-workspace': '这个工作区已经不在注册表里了。',
       'error.caller-session': '不能删除正在执行这次操作的工作区。',
       'error.no-sessions-root': '定位不到会话存储根目录，为安全起见拒绝操作。',
@@ -134,12 +128,6 @@ window.__ModuleLoader__.load({
       'bin.confirmClear': 'Empty all {count} entr(ies) in the recycle bin? This cannot be undone.',
       'bin.confirmYes': 'Delete permanently',
       'bin.confirmNo': 'Keep them',
-      'toast.moved': '"{title}" is in the recycle bin',
-      'toast.moving': 'Moving the session…',
-      'toast.movedTo': 'The session moved to the target workspace',
-      'toast.restored': 'Restored "{title}"',
-      'toast.purged': 'Permanently deleted {count} entr(ies)',
-      'toast.cleared': 'The recycle bin is empty',
       'error.unknown-workspace': 'That workspace is no longer in the registry.',
       'error.caller-session': 'The workspace running this operation cannot delete itself.',
       'error.no-sessions-root': 'The session storage root could not be located, so the operation was refused.',
@@ -635,10 +623,8 @@ window.__ModuleLoader__.load({
 
     /** 调一次 Host 的 relocate，并把结果变成提示。 */
     async function moveSession(ctx, t, sessionId, targetWorkspaceId) {
-      toastStore.set({ text: t('toast.moving') })
       const result = await callHost('relocate', { sessionId, targetWorkspaceId })
       if (result.ok === true) {
-        toastStore.set({ text: t('toast.movedTo') })
         bump()
         refreshSessions()
       } else {
@@ -753,14 +739,10 @@ window.__ModuleLoader__.load({
       const confirmDelete = () => {
         if (request === null || plan === null || busy) return
         const payload = request.kind === 'session' ? { sessionId: request.sessionId } : { workspaceId: request.workspaceId }
-        const title = request.kind === 'session'
-          ? (plan.session?.title || request.displayTitle || request.sessionId)
-          : (plan.workspace?.title || plan.workspace?.path || request.displayTitle)
         setBusy(true)
         callHost('move', payload).then((result) => {
           setBusy(false)
           if (result.ok === true) {
-            notify(t('toast.moved', { title }))
             requestStore.set(null)
             bump()
             if (request.kind === 'session') closeOpenSession(request.sessionId)
@@ -777,7 +759,6 @@ window.__ModuleLoader__.load({
         callHost('restore', { entryId: entry.id }).then((result) => {
           setRowBusy(null)
           if (result.ok === true) {
-            notify(t('toast.restored', { title: entry.title || entry.id }))
             bump()
             refreshSessions()
           } else {
@@ -792,8 +773,6 @@ window.__ModuleLoader__.load({
         callHost('empty', entryIds === undefined ? {} : { entryIds }).then((result) => {
           setRowBusy(null)
           if (result.ok === true) {
-            const count = Array.isArray(result.value?.purged) ? result.value.purged.length : 0
-            notify(entryIds === undefined ? t('toast.cleared') : t('toast.purged', { count }))
             bump()
             refreshSessions()
           } else {

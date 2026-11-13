@@ -189,7 +189,7 @@ test('dragstart 记住来源；跨组 dragover 才接管并高亮；drop 调 rel
   assert.equal(requests.length, 1)
   assert.equal(requests[0].body.endpoint, 'relocate')
   assert.deepEqual(requests[0].body.payload, { sessionId: 'session-1', targetWorkspaceId: 'ws-2' })
-  assert.equal(exported.__stores.toastStore.get().text, '会话已移到目标工作区')
+  assert.equal(exported.__stores.toastStore.get(), null, '成功搬运不再弹提示')
 })
 
 test('跨组 dragover 会清掉官方残留的蓝色插入线', async () => {
