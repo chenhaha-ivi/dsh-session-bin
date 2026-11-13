@@ -111,7 +111,7 @@ UI 不再暴露。
 
 ## 一致性验证
 
-- `node --test`：123 个用例（fake DSH home，全部写 `.test-tmp/`）。
+- `node --test`：124 个用例（fake DSH home，全部写 `.test-tmp/`）。
 - `scripts/crash-injection.mjs`：在删除流程 7 个阶段 SIGKILL，断言恢复后
   文件、归属、回收站三者最终一致。
 - 隔离实例 + 真浏览器（0.2.2-rc.1）：冷会话删除无「未分组」、恢复回原分组、
@@ -139,10 +139,15 @@ node scripts/repair-duplicates.mjs # 修「同一会话被两个工作区记账�
 
 1. `node --test` 全绿，再跑三个 e2e 与 `crash-injection`；
 2. `package.json` 的 `version` 与 CHANGELOG 顶部节点一致（改名后从 0.1.0 重新起，不续旧包号）；
-3. CHANGELOG 只写用户能感知的变化，实现细节留在本文件；
-4. `npm pack --dry-run` 确认 `files` 覆盖 host/client/src/icon/docs/三份文档；
-5. 打 annotated tag：`git tag -a v0.1.0 -m "dsh-session-bin 0.1.0"`（0.1.0 是改名后首个版本，旧包不补 tag）；
-6. 需要发 npm 时先去掉 `private: true` 并补 `repository`/`homepage`/`bugs`。
+3. 展示资源齐全：`locale/{zh,en}.json` 的 `meta.title` / `meta.description` / `meta.detail` 指向存在的
+   `docs/DETAIL*.md`，详情页只放 `docs/preview.svg` 一张图（640×300，无文字、脚本、外链）；
+   `test/manifest.test.mjs` 会挡住漏项；
+4. CHANGELOG 只写用户能感知的变化，实现细节留在本文件；
+5. `npm pack --dry-run` 确认 `files` 覆盖 host/client/src/icon/locale/docs/三份文档；正式产物用
+   `npm pack --pack-destination dist`，记 sha256，并解包跑 `import('./host.js')` 与资源校验；
+6. 打 annotated tag：`git tag -a v0.1.0 -m "dsh-session-bin 0.1.0"`（0.1.0 是改名后首个版本，旧包不补 tag）；
+7. `npm publish --registry=https://registry.npmjs.org`：本机默认 registry 是 npmmirror，必须显式覆盖；
+   账号是 `auth-and-writes` 2FA，发布会要 OTP。完整步骤与回滚见 [RELEASE.md](../RELEASE.md)。
 
 ## 已知工程边界
 

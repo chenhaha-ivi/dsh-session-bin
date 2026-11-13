@@ -1,0 +1,7 @@
+{
+  "meta": {
+    "title": "Session recycle bin",
+    "description": "Deleted sessions move to a recycle bin instead of disappearing. Restore them to the original workspace, drag sessions between workspaces, and permanently delete only after a second confirmation. The entry sits in the sidebar footer; a running turn is stopped first, and the whole action is refused when it cannot stop.",
+    "detail": "docs/DETAIL.md"
+  }
+}

@@ -6,31 +6,44 @@
 ## 0. 前置条件
 
 - DSH **0.2.2-rc.1 / rc.2**（desktop profile），Node ≥ 22，pnpm 可用。
-- 包在 `dsh-session-bin/` 下，`package.json` 的 `dsh.engines.dsh` 写着兼容范围。
+- 包在 `dsh-session-bin/` 下，`package.json` 的 `engines.dsh` 写着兼容范围。
 - 如果装了 `dsh-plugin-session-purge`，先决定留哪个：两者都有会话回收站，功能重叠，建议二选一。
 
 ## 1. 安装
 
+两种方式选一种。装之前先备份 profile 清单，出问题能原样退回去：
+
 ```bash
 cd ~/.dsh/profiles/desktop
-
-# 1. 备份 profile 清单，出问题能原样退回去
 cp package.json package.json.bak-before-session-bin
+```
 
-# 2. 把本地目录链进依赖（改代码不用重装；<仓库根目录> 例如 ~/Documents/dsh-session-bin）
-pnpm add link:<仓库根目录>
+### 方式 A：从 npm 安装（发布后，推荐）
 
-# 3. 在 package.json 的 dsh.profile.bundles 数组里加一行：
-#    "dsh-session-bin"
-#    （位置随意，建议放在 dsh-plugin-session-purge 附近）
-
-# 4. 预检（只读，不写盘）
+```bash
+dsh plugin --profile desktop add dsh-session-bin
 cd <仓库根目录>
 node scripts/check-profile.mjs
 ```
 
-`check-profile.mjs` 会打印：profile 清单里有没有这个包、`node_modules` 的链指到哪、
-engines 是否匹配。全部 OK 再重启 DSH。
+`dsh plugin add` 会自动把包加进 `dsh.profile.bundles`，不用手改清单。
+
+### 方式 B：从本地仓库链接（开发时，改代码不用重装）
+
+```bash
+cd ~/.dsh/profiles/desktop
+pnpm add link:<仓库根目录>      # <仓库根目录> 例如 ~/Documents/dsh-session-bin
+
+# 再在 package.json 的 dsh.profile.bundles 数组里加一行：
+#    "dsh-session-bin"
+#    （位置随意，建议放在 dsh-plugin-session-purge 附近）
+
+cd <仓库根目录>
+node scripts/check-profile.mjs
+```
+
+`check-profile.mjs` 会打印：profile 清单里有没有这个包、`node_modules` 的链指到哪
+（npm 安装显示 `installedCopy`）、engines 是否匹配。全部 OK 再重启 DSH。
 
 ## 1.5 从旧包 0.4.x 升级（0.1.0 改名）
 

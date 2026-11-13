@@ -4,7 +4,7 @@ DSH 的会话回收站：删掉的会话先放进来，能恢复、也能彻底�
 
 > 当前版本 **0.1.0**：包从 `dsh-workspace-bin` 改名为 `dsh-session-bin`，版本号重新起算。
 > 适配 DSH **0.2.2-rc.1 / rc.2**（desktop profile），只走公开 API，不改 `app.asar`、不改核心包。
-> 安装与验收：[INSTALL.md](INSTALL.md) · 版本变化：[CHANGELOG.md](CHANGELOG.md) · 开发与内部实现：[docs/DEVELOPMENT.md](docs/DEVELOPMENT.md)
+> 安装与验收：[INSTALL.md](INSTALL.md) · 版本变化：[CHANGELOG.md](CHANGELOG.md) · 发布清单：[RELEASE.md](RELEASE.md) · 开发与内部实现：[docs/DEVELOPMENT.md](docs/DEVELOPMENT.md)
 
 ## 能做什么
 
@@ -21,6 +21,14 @@ DSH 的会话回收站：删掉的会话先放进来，能恢复、也能彻底�
 
 ## 安装
 
+从 npm 装（发布后，推荐）：
+
+```bash
+dsh plugin --profile desktop add dsh-session-bin
+```
+
+从本地仓库链接装（开发、或 npm 上还没有这个版本时）：
+
 ```bash
 cd ~/.dsh/profiles/desktop
 pnpm add link:<仓库根目录>      # 例如 ~/Documents/dsh-session-bin
@@ -30,10 +38,12 @@ pnpm add link:<仓库根目录>      # 例如 ~/Documents/dsh-session-bin
 ```
 
 装完：侧栏页脚出现「回收站」，会话「…」菜单出现「回收会话」。
-卸载：从 `dsh.profile.bundles` 删掉那一行并重启；回收站目录不会自动清理（手动删就是真删字节）。
+卸载：`dsh plugin --profile desktop remove dsh-session-bin`（或从 `dsh.profile.bundles` 删掉那一行）并重启；
+回收站目录不会自动清理（手动删就是真删字节）。
 完整步骤、逐项验收和回滚方式见 [INSTALL.md](INSTALL.md)。
 
-> 目前按本地仓库链接（`link:`）安装，包仍是 `private`，没有发布到 npm。
+> 0.1.0 的 npm 产物已打包、校验（`dist/dsh-session-bin-0.1.0.tgz`，见 [RELEASE.md](RELEASE.md)），
+> `npm publish` 仍待执行；发布前请用上面的本地链接方式安装。
 
 > **从旧包 0.4.x 升级**：仓库目录、profile 依赖和 `dsh.profile.bundles` 都换成新包名
 > `dsh-session-bin`（版本号从 0.1.0 重新起），重启即可；回收站数据与暂存区会在首次启动时自动迁移。

@@ -1,20 +1,23 @@
 {
   "name": "dsh-session-bin",
   "version": "0.1.0",
-  "private": true,
   "description": "会话回收站 + 跨区拖拽：删除的会话先进回收站，可恢复、可永久删除。",
   "type": "module",
   "license": "MIT",
+  "author": "webchenming",
   "keywords": [
     "dsh",
     "dsh-plugin",
+    "deepseek-harness",
     "session",
     "recycle-bin",
-    "workspace-move"
+    "workspace-move",
+    "drag-and-drop"
   ],
   "exports": {
     ".": "./host.js",
     "./client": "./client.js",
+    "./locale/*.json": "./locale/*.json",
     "./icon": "./icon.svg",
     "./package.json": "./package.json"
   },
@@ -24,11 +27,13 @@
     "src",
     "icon.svg",
     "cordis.patch.yml",
+    "locale/*.json",
     "docs",
     "scripts/repair-duplicates.mjs",
     "scripts/rename-checkout.mjs",
     "README.md",
     "INSTALL.md",
+    "RELEASE.md",
     "CHANGELOG.md",
     "LICENSE"
   ],
@@ -37,17 +42,16 @@
     "e2e": "node scripts/m1-e2e.mjs",
     "e2e:session": "node scripts/m3-session-e2e.mjs",
     "e2e:move": "node scripts/m3-move-e2e.mjs",
-    "crash": "node scripts/crash-injection.mjs"
+    "crash": "node scripts/crash-injection.mjs",
+    "prepublishOnly": "npm test"
   },
   "engines": {
-    "node": ">=22"
+    "node": ">=22",
+    "dsh": ">=0.2.2-rc.1 <0.3.0"
   },
   "dsh": {
     "bundle": {
       "patch": "./cordis.patch.yml"
-    },
-    "engines": {
-      "dsh": ">=0.2.2-rc.1 <0.3.0"
     },
     "client": {
       "platform": "web",

@@ -6,6 +6,15 @@
 
 ## 0.1.0 — 2026-11-13（dsh-session-bin 首个版本）
 
+### 发布
+
+- 首个发布到 npm 的版本：`npm publish` 后可以用 `dsh plugin --profile desktop add dsh-session-bin` 安装，
+  不再只支持本地 `link:`。
+- 补齐插件页展示资源：`locale/zh.json`、`locale/en.json` 的标题/描述/详情页声明，
+  `docs/DETAIL*.md` 与预览图 `docs/preview.svg`；插件页不再退回包名和一行英文描述。
+- `private` 已移除；`engines.dsh` 从 `dsh.engines` 移到顶层 `engines.dsh`——DSH 安装与启动校验读的是顶层字段，
+  原来嵌套的那份不会被检查。
+
 ### 破坏性变更
 
 - 包名 `dsh-workspace-bin` → `dsh-session-bin`，插件 id `workspace-bin` → `session-bin`；

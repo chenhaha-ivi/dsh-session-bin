@@ -33,18 +33,24 @@ try {
   try {
     const info = await lstat(linked)
     report.checks.linked = info.isSymbolicLink()
-    report.checks.linkTarget = await realpath(linked)
-    if (resolve(report.checks.linkTarget) !== resolve(here)) {
-      problems.push(`node_modules/${PACKAGE} 指向 ${report.checks.linkTarget}，不是 ${here}`)
+    if (info.isSymbolicLink()) {
+      report.checks.linkTarget = await realpath(linked)
+      if (resolve(report.checks.linkTarget) !== resolve(here)) {
+        problems.push(`node_modules/${PACKAGE} 指向 ${report.checks.linkTarget}，不是 ${here}`)
+      }
+    } else {
+      const installed = await readJson(join(linked, 'package.json'))
+      report.checks.installedCopy = `${installed.name}@${installed.version}`
+      if (installed.name !== PACKAGE) problems.push(`node_modules/${PACKAGE} 里装的是 ${installed.name}`)
     }
   } catch {
     report.checks.linked = false
-    problems.push(`node_modules/${PACKAGE} 不存在（先 pnpm add link:${here}）`)
+    problems.push(`node_modules/${PACKAGE} 不存在（先 pnpm add link:${here} 或 dsh plugin --profile <name> add ${PACKAGE}）`)
   }
 
   const plugin = await readJson(join(here, 'package.json'))
-  report.engines = { node: plugin.engines?.node, dsh: plugin.dsh?.engines?.dsh }
-  if (plugin.dsh?.engines?.dsh === undefined) problems.push('package.json 缺少 dsh.engines.dsh')
+  report.engines = { node: plugin.engines?.node, dsh: plugin.engines?.dsh }
+  if (plugin.engines?.dsh === undefined) problems.push('package.json 缺少 engines.dsh')
 } catch (error) {
   problems.push(`读不了 profile：${error.message}`)
 }

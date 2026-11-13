@@ -94,6 +94,7 @@ M1 内部按「纯函数 → 存储 → 事务 → 路由 → 恢复」推进，
 
 | 日期 | 做了什么 | 证据 |
 |---|---|---|
+| 2026-11-13 | 发布前置准备（npm 0.1.0）：元数据、插件页展示资源、产物与发布清单 | `node --test` 124 全绿；三个 e2e + `crash-injection` 全 OK；`npm pack` 28 文件约 74 kB（校验值见 `CHECKSUMS`）；`npm publish --dry-run` 通过；见 [RELEASE.md](RELEASE.md) |
 | 2026-11-13 | 修复：跨区移动后目标工作区显示「未命名」 | 根因是 relocate 删掉了 `session_projcache` 记录，冷列表没有 title 投影。改为保留 rows、只更新 `identity.cwd`（查不到记录/写失败才删）。隔离实例：带标题会话 A→B 后刷新页面直接显示标题；`node --test` 103 全绿 |
 | 2026-11-12 | 新增：官方删除工作区时把本地目录送进系统回收站 | Host 监听 `domain/changed`（`put` 缓存 path、`deleted` 搬目录）；Electron `shell.trashItem` 优先，macOS 退回 `~/.Trash`，跨卷/保护区拒绝并记日志；插件自身事务 `suppress`。`node --test` 101 全绿；隔离实例 + 真浏览器验证官方删除后目录消失、插件删除时目录保留 |
 | 2026-11-12 | 按用户决定移除工作区删除入口 | 客户端不再注册 `contextMenus`；工作区删除交给 DSH 自带按钮（只移除登记）；README/INSTALL/CHANGELOG 同步；`node --test` 89 全绿 |
@@ -113,4 +114,6 @@ M1 内部按「纯函数 → 存储 → 事务 → 路由 → 恢复」推进，
 | 2026-11-12 | M3-1 单会话删除/恢复落地：`session.js`、路由按 payload 分流、会话菜单项、`kind: session` 清理与恢复 | `node --test`：61 个用例全绿；`node scripts/m3-session-e2e.mjs` 走完 plan→move→list→restore；启动恢复补上了会话条目分支 |
 | 2026-11-12 | M2 客户端落地（菜单 / 页脚 / 面板 / 确认框 / 文案 / 样式） | `node --test`：51 个用例全绿；`client.js` 在假 loader + 假 ctx 上验证了 `contextMenus`（target=workspace、order=310、item 形状）、三个 slot、zh/en 词典键一致；轻量渲染冒烟能展开页脚、空面板和待确认对话框。真机视觉验收待 M4-3 |
 
-剩余唯一任务：**M4-3 真机验收**（装进 desktop profile → 重启 → 菜单/面板/拖拽/恢复走一遍）。这一步要写 `~/.dsh` 并重启 DSH，等 Boss 批准，不自动执行。
+剩余任务：**M4-3 真机验收**（装进 desktop profile → 重启 → 菜单/面板/拖拽/恢复走一遍）与
+[RELEASE.md](RELEASE.md) 里的 **`npm publish`**（要你输 2FA OTP，是最后一步不可逆动作）。
+M4-3 要写 `~/.dsh` 并重启 DSH，等 Boss 批准，不自动执行。
