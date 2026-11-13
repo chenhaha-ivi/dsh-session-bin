@@ -16,7 +16,18 @@ jobs:
         with:
           node-version: '22'
       - name: Unit tests
-        run: npm test
+        shell: bash
+        run: |
+          set +e
+          npm test > test-output.txt 2>&1
+          status=$?
+          if [ "$status" -ne 0 ]; then
+            tail -160 test-output.txt
+            grep -E '^not ok' test-output.txt | head -10 | while IFS= read -r line; do
+              echo "::error title=Windows unit test::$line"
+            done
+          fi
+          exit "$status"
       - name: Workspace end-to-end
         run: node scripts/m1-e2e.mjs
       - name: Session end-to-end
