@@ -65,9 +65,10 @@ export function apply(ctx, config) {
   }
   const runtime = createRuntime(deps)
 
-  // 官方「删除工作区」只摘登记；这里监听删除事件，把工作区的本地目录丢进系统回收站。
-  // 插件自己的工作区事务会 suppress(id)，只动会话、不碰目录。
-  const folderWatcher = settings.trashWorkspaceFolder === false
+  // 官方「删除工作区」只摘登记；这个能力**默认关闭**，配置 `trashWorkspaceFolder: true` 才监听
+  // 删除事件并把工作区目录丢进系统回收站。插件自己的工作区事务始终 suppress(id)，只动会话。
+  const trashWorkspaceFolder = settings.trashWorkspaceFolder === true
+  const folderWatcher = trashWorkspaceFolder === false
     ? { suppress() {}, dispose() {}, idle: async () => {} }
     : createWorkspaceFolderWatcher({
         ctx,

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { readFile } from 'node:fs/promises'
+import { readFile, stat } from 'node:fs/promises'
 
 /** 包清单是安装时的第一道门：字段错了，插件根本不进加载队列。 */
 test('package.json 的 DSH 清单字段齐全', async () => {
@@ -9,14 +9,34 @@ test('package.json 的 DSH 清单字段齐全', async () => {
   assert.equal(pkg.type, 'module')
   assert.equal(pkg.exports['.'], './host.js')
   assert.equal(pkg.exports['./client'], './client.js')
+  assert.equal(pkg.exports['./icon'], './icon.svg')
   assert.equal(pkg.dsh.bundle.patch, './cordis.patch.yml')
   assert.equal(pkg.dsh.client.platform, 'web')
   assert.equal(Array.isArray(pkg.dsh.client.inject), true)
   assert.equal(pkg.dsh.client.inject.includes('@deepseek-ai/dsh-client-ui-workspace'), true)
   assert.match(pkg.dsh.engines.dsh, /0\.2\.2-rc\.1/)
   assert.match(pkg.engines.node, />=22/)
-  for (const file of ['host.js', 'client.js', 'src', 'cordis.patch.yml', 'README.md']) {
+  for (const file of ['host.js', 'client.js', 'src', 'cordis.patch.yml', 'README.md', 'icon.svg']) {
     assert.equal(pkg.files.includes(file), true, `files 缺 ${file}`)
+  }
+})
+
+/** 图标缺失时 Plugin Manager 会退回默认图；尺寸/引用错了同样不显示，所以这里挡一道。 */
+test('icon.svg 是 36×36 的自包含 SVG', async () => {
+  const { size } = await stat(new URL('../icon.svg', import.meta.url))
+  assert.ok(size < 256 * 1024, `icon.svg 超过 256 KiB：${size}`)
+  const svg = await readFile(new URL('../icon.svg', import.meta.url), 'utf8')
+  assert.match(svg, /width="36"\s+height="36"/)
+  assert.match(svg, /viewBox="0 0 36 36"/)
+  for (const forbidden of ['<script', '<style', '<image', 'foreignObject', 'onload=', '<text']) {
+    assert.equal(svg.includes(forbidden), false, `icon.svg 不应包含 ${forbidden}`)
+  }
+  // 渐变/mask id 以 workspace-bin- 前缀命名，内联到页面时不会撞车。
+  const ids = [...svg.matchAll(/id="([^"]+)"/g)].map((m) => m[1])
+  assert.ok(ids.length > 0)
+  for (const id of ids) assert.match(id, /^workspace-bin-/)
+  for (const ref of [...svg.matchAll(/url\(#([^)]+)\)/g)].map((m) => m[1])) {
+    assert.equal(ids.includes(ref), true, `引用了不存在的 id：${ref}`)
   }
 })
 

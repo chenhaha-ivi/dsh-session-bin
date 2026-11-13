@@ -1,6 +1,6 @@
 {
   "name": "dsh-workspace-bin",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "private": true,
   "description": "会话回收站 + 跨区拖拽：删除的会话先进回收站，可恢复、可永久删除。",
   "type": "module",
@@ -15,12 +15,14 @@
   "exports": {
     ".": "./host.js",
     "./client": "./client.js",
+    "./icon": "./icon.svg",
     "./package.json": "./package.json"
   },
   "files": [
     "host.js",
     "client.js",
     "src",
+    "icon.svg",
     "cordis.patch.yml",
     "README.md",
     "INSTALL.md",

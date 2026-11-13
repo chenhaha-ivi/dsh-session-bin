@@ -13,6 +13,11 @@ function fakeCtx(world, registrations) {
     workspaceRegistry: world.registry,
     logger: { info() {}, warn() {}, debug() {}, error() {} },
     get: (service) => (service === 'sessions' ? world.sessions : undefined),
+    on(name) {
+      this.listeners.push(name)
+      return () => {}
+    },
+    listeners: [],
     effect(fn, label) {
       const disposer = fn()
       effects.push({ label, disposer })
@@ -78,6 +83,22 @@ test('apply 挂一个精确 POST 路由，并注册可拆的 effect', async () =
       'workspace-bin: OS trash watcher',
       'workspace-bin: fetch route',
     ])
+  } finally {
+    const { dispose } = await import('./helpers.mjs')
+    await dispose(world.home)
+  }
+})
+
+test('trashWorkspaceFolder 默认关闭；显式 true 才监听官方删除', async () => {
+  const world = await makeWorld({ sessionIds: ['session-1'] })
+  try {
+    const offCtx = fakeCtx(world, [])
+    apply(offCtx, { home: world.home })
+    assert.deepEqual(offCtx.listeners, [], '默认不挂 domain/changed')
+
+    const onCtx = fakeCtx(world, [])
+    apply(onCtx, { home: world.home, trashWorkspaceFolder: true })
+    assert.deepEqual(onCtx.listeners, ['domain/changed'], '显式开启才监听')
   } finally {
     const { dispose } = await import('./helpers.mjs')
     await dispose(world.home)

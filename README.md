@@ -18,16 +18,25 @@ DSH 会话回收站 + 跨区拖拽：单会话删除先进回收站（可恢复�
 - 工作区删除交给 DSH 自带的「删除工作区」；插件监听删除事件，把工作区文件夹一起送进系统回收站（见上一节），
   会话日志仍留在 DSH 的 sessions 目录里（官方语义）。
 
-## 官方「删除工作区」→ 本地目录进系统回收站
+## 官方「删除工作区」→ 本地目录进系统回收站（默认关闭）
 
-- 插件监听 Host 的 `domain/changed`：用户在官方入口确认删除后，把该工作区的**本地文件夹**
+这个能力**默认关闭**，显式配置后才生效：在 profile 的 `cordis.patch.yml` 里给插件行加 `config`：
+
+```yaml
+# ~/.dsh/profiles/desktop/cordis.patch.yml
+- id: workspace-bin
+  config:
+    trashWorkspaceFolder: true
+```
+
+- 开启后插件监听 Host 的 `domain/changed`：用户在官方入口确认删除后，把该工作区的**本地文件夹**
   移进操作系统回收站（macOS 废纸篓 / Windows 回收站）。
 - macOS 先把目录 `rename` 进 `~/.Trash`（目标确定、Finder 可见；重名加时间后缀），跨卷才交给
   Electron 的 `shell.trashItem`；其它平台用 Electron，拿不到就明确拒绝，绝不 `rm -rf`。
 - 每次搬移/跳过/失败都追加到 `<DSH_HOME>/workspace-bin/os-trash.log`，方便对账。
 - 只对**官方入口**生效：插件自己的工作区事务会 `suppress`，只搬会话、不碰目录。
 - 保护区会跳过并记日志：DSH home、会话存储根、宿主进程 cwd、别的嵌套工作区的祖先目录。
-- 不需要时在配置里写 `trashWorkspaceFolder: false` 关闭。
+- 不配置（或写 `false`）时完全不动工作区目录，保持官方「只移除登记」的语义。
 
 ## 安装（本地目录）
 
